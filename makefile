@@ -1,7 +1,7 @@
-PROJECT_NAME = residential-service
+PROJECT_NAME = micro-service
 DOCKER_COMPOSE = docker compose -p $(PROJECT_NAME) -f infra/docker-compose.local.yml
-API_CONTAINER = namuna-residential-api
-DB_CONTAINER = namuna-residential-db
+API_CONTAINER = micro-service-api
+DB_CONTAINER = micro-service-db
 DC_EXEC = docker exec -it $(API_CONTAINER)
 
 .DEFAULT_GOAL := help
@@ -22,7 +22,7 @@ shell:
 	$(DC_EXEC) bash
 
 psql:
-	docker exec -it $(DB_CONTAINER) psql -U postgres $(PROJECT_NAME)
+	docker exec -it $(DB_CONTAINER) psql -U $$POSTGRES_USER $$POSTGRES_DB
 
 clean:
 	$(DOCKER_COMPOSE) down -v
@@ -54,7 +54,7 @@ help:
 	@echo "  make restart     - Restart API container"
 	@echo "  make logs        - Show logs"
 	@echo "  make shell       - Bash into API container"
-	@echo "  make psql        - Connect to Postgres"
+	@echo "  make psql        - Connect to Postgres (uses env DB and USER)"
 	@echo "  make build       - Build Docker images"
 	@echo "  make clean       - Remove all containers & volumes"
 	@echo "  make upgrade     - Apply all migrations"
