@@ -6,13 +6,13 @@ import pytest
 
 from src.enums.status import Status
 
-from src.services.complex import ComplexService
+from src.services.users import ComplexService
 
-from src.schemas.complex import ComplexReadSchema
-from src.schemas.complex import ComplexCreateSchema
-from src.schemas.complex import ComplexUpdateSchema
+from src.schemas.users import ComplexReadSchema
+from src.schemas.users import ComplexCreateSchema
+from src.schemas.users import ComplexUpdateSchema
 
-from src.exceptions.service.complex import ComplexNotFound
+from src.exceptions.service.users import ComplexNotFound
 
 from src.tests.unit.base.base_crud_test import ServiceTestBase
 

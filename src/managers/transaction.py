@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.managers.base import BaseManager
 from src.repositories.base import BaseRepository
-from src.repositories.complex import ComplexRepository
+from src.repositories.users import UsersRepository
 
 
 T = TypeVar("T")
@@ -29,7 +29,7 @@ class TransactionManager(Generic[T], BaseManager):
     and manages database sessions with commit/rollback.
     """
 
-    complex: ComplexRepository
+    users: UsersRepository
 
     def __init__(
         self,
@@ -46,7 +46,7 @@ class TransactionManager(Generic[T], BaseManager):
 
         self.session_factory = session_factory
         self._repositories = {
-            "complex": ComplexRepository,
+            "users": UsersRepository,
             **repositories,
         }
 

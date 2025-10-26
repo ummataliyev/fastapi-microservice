@@ -7,21 +7,11 @@ into a single `main_router` that is then mounted on the FastAPI application.
 
 from fastapi import APIRouter
 
-from src.api.section import router as section_router
-from src.api.complex import router as complex_router
-from src.api.floor import router as floor_router
-from src.api.building import router as building_router
-from src.api.apartment import router as apartment_router
-from src.api.plan_file import router as plan_file_router
+from src.api.users import router as users_router
 
 
 routers = (
-    complex_router,
-    building_router,
-    section_router,
-    floor_router,
-    apartment_router,
-    plan_file_router,
+    users_router
 )
 
 main_router = APIRouter()

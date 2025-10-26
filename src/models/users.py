@@ -12,7 +12,7 @@ from src.db.postgres.mixins import TimestampMixin
 from src.db.postgres.mixins import SoftDeletionMixin
 
 
-class User(Base, IDPkMixin, TimestampMixin, SoftDeletionMixin):
+class Users(Base, IDPkMixin, TimestampMixin, SoftDeletionMixin):
     """
     Database model representing a system user.
 
