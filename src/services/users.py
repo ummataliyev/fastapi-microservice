@@ -39,22 +39,24 @@ class UsersService(BaseService):
         self,
         limit: int = 10,
         offset: int = 0,
+        current_page: int = 1,
         search: str | None = None,
-    ) -> PaginatedResponseSchema:
-        """
-        List users with optional search by email.
-        """
-        items, total = await self.db.users.get_all(
+    ) -> PaginatedResponseSchema[UserReadSchema]:
+
+        items = await self.db.users.get_all(
             limit=limit,
             offset=offset,
             search=search,
         )
 
-        return PaginatedResponseSchema(
-            users=[UserReadSchema(**i) for i in items],
-            total=total,
-            limit=limit,
-            offset=offset,
+        total_items = await self.db.users.count()
+
+        return self.build_paginated_response(
+            items=items,
+            total_items=total_items,
+            current_page=current_page,
+            per_page=limit,
+            message="Users retrieved successfully",
         )
 
     async def create(self, data: UserCreateSchema) -> UserReadSchema:

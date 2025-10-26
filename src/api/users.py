@@ -31,6 +31,7 @@ async def list_users(
     return await UsersService(db).get_list(
         limit=pagination.limit,
         offset=pagination.offset,
+        current_page=pagination.current_page,
         search=search,
     )
 
