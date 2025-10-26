@@ -1,12 +1,13 @@
 """
-Migration environment setup.
+Migration environment setup for Alembic + async SQLAlchemy.
 """
 
+import asyncio
 from logging.config import fileConfig
+
 from sqlalchemy import pool
-from sqlalchemy import engine_from_config
-from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
+from alembic import context
 
 # ✅ Import application settings
 from src.config import settings  # Adjust path if needed
@@ -15,7 +16,7 @@ from src.db.postgres.database import Base
 # Alembic Config object
 config = context.config
 
-# ✅ Override sqlalchemy.url with our dynamic Pydantic settings
+# Override sqlalchemy.url with dynamic Pydantic settings
 config.set_main_option("sqlalchemy.url", settings.postgres.build_url())
 
 # Logging config
@@ -28,7 +29,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """
-    Run migrations in 'offline' mode.
+    Run migrations in 'offline' mode (generates SQL scripts without DB connection).
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -42,20 +43,31 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-async def run_migrations_online():
-    connectable = create_async_engine(settings.postgres.url)
-
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
-
 def do_run_migrations(connection):
+    """
+    Execute migrations using a given connection.
+    """
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
 
 
+async def run_migrations_online() -> None:
+    """
+    Run migrations in 'online' mode using async engine.
+    """
+    connectable = create_async_engine(
+        settings.postgres.build_url(),
+        poolclass=pool.NullPool,  # Optional: avoid connection pooling during migrations
+    )
+
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
+# Entry point
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

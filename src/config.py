@@ -61,22 +61,6 @@ class PaginationSettings(BaseModel):
         return self.max_entities_per_page
 
 
-class MinioSettings(BaseModel):
-    """
-    MinIO (S3-compatible storage) connection settings.
-    """
-
-    internal_endpoint: str = os.getenv("MINIO_INTERNAL_ENDPOINT", "minio:9000")
-    public_endpoint: str = os.getenv("MINIO_PUBLIC_ENDPOINT", "localhost:9000")
-    access_key: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-    secret_key: str = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-    bucket_name: str = os.getenv("MINIO_BUCKET_NAME", "files")
-    secure: bool = os.getenv("MINIO_SECURE", "false").lower() in ["true", "1", "yes"]
-
-    def is_secure(self) -> bool:
-        return self.secure
-
-
 class Settings(BaseSettings):
     """
     Main application settings combining all modules.
@@ -85,7 +69,6 @@ class Settings(BaseSettings):
 
     pagination: PaginationSettings = PaginationSettings()
     postgres: PostgresDatabaseSettings = PostgresDatabaseSettings()
-    minio: MinioSettings = MinioSettings()
 
     model_config = ConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
