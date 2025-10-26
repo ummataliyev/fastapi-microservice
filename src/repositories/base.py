@@ -304,3 +304,20 @@ class BaseRepository(Generic[T]):
         )
         result = await self.session.execute(stmt)
         return result.rowcount or 0
+
+    async def count(self, filters: dict | None = None) -> int:
+        """
+        Count records in the table with optional filters.
+
+        :param filters: Optional dictionary of field-value filters.
+        :return: Number of matching records.
+        """
+
+        stmt = select(func.count()).select_from(self.model)
+
+        if filters:
+            for field, value in filters.items():
+                stmt = stmt.where(getattr(self.model, field) == value)
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one()

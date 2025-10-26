@@ -2,6 +2,8 @@
 Base schemas for API responses and common fields.
 """
 
+import uuid
+
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -24,7 +26,7 @@ class UUIDSchema(BaseModel):
     :param id: Unique identifier (UUID) of the object.
     """
 
-    id: int
+    id: uuid.UUID
 
 
 class TimestampSchema(BaseModel):

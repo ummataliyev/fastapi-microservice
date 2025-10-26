@@ -15,7 +15,6 @@ from src.api import main_router
 app = FastAPI(
     title="Namuna's Residential Service API",
     version="0.1.0",
-    root_path="/residential",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",

@@ -8,25 +8,19 @@ import inflect
 from sqlalchemy import NullPool
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.config import settings
 
+
 async_engine = create_async_engine(
     url=settings.postgres.url,
-    echo=settings.postgres.echo,
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=1800,
 )
 
 async_engine_null_pull = create_async_engine(
     url=settings.postgres.url,
     poolclass=NullPool,
-    echo=settings.postgres.echo,
 )
 
 async_session = async_sessionmaker(
@@ -38,7 +32,6 @@ async_session_null_pool = async_sessionmaker(
     async_engine_null_pull,
     expire_on_commit=False,
 )
-
 inflect_engine = inflect.engine()
 
 
@@ -47,6 +40,8 @@ class Base(DeclarativeBase):
     Base class for all SQLAlchemy models with automatic table naming.
 
     Converts CamelCase class names into plural snake_case table names.
+    All models inheriting from this base will automatically have
+    `__tablename__` set according to this convention.
     """
 
     @declared_attr.directive

@@ -29,6 +29,11 @@ class PostgresDatabaseSettings(BaseModel):
 
     url: PostgresDsn = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}"  # type: ignore
 
+    @property
+    def sync_url(self) -> str:
+        """Return the synchronous URL for Alembic migrations."""
+        return f"postgresql+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+
     def build_url(self) -> str:
         """
         Construct the PostgreSQL DSN URL.
