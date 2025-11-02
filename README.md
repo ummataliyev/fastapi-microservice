@@ -9,7 +9,7 @@
 2. **Set up environment variables:**
    - Create a `.env` file in the project's root directory.
    ```bash
-   cp .env-example .env
+   cp infra/.env-example infra/.env
    ```
 
 
