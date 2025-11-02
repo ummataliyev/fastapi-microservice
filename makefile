@@ -1,4 +1,4 @@
-PROJECT_NAME = micro-service
+PROJECT_NAME = fastapi-microservice
 DOCKER_COMPOSE = docker compose -p $(PROJECT_NAME) -f infra/docker-compose.local.yml
 API_CONTAINER = micro-service-api
 DB_CONTAINER = micro-service-db
