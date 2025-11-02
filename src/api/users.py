@@ -1,14 +1,22 @@
 from typing import Any
-from fastapi import status, APIRouter
+
+from fastapi import status
+from fastapi import APIRouter
+
 from src.services.users import UsersService
-from src.api.dependencies import PaginationDep, DbTransactionDep
-from src.schemas.users import UserReadSchema, UserCreateSchema, UserUpdateSchema
+from src.api.dependencies import PaginationDep
+from src.api.dependencies import DbTransactionDep
+
+from src.schemas.users import UserReadSchema
+from src.schemas.users import UserCreateSchema
+from src.schemas.users import UserUpdateSchema
 from src.schemas.pagination import PaginatedResponseSchema
-from src.exceptions.service.users import UserNotFound, UserAlreadyExists
-from src.exceptions.api.users import (
-    UserNotFoundHTTPException,
-    UserAlreadyExistsHTTPException,
-)
+
+from src.exceptions.service.users import UserNotFound
+from src.exceptions.service.users import UserAlreadyExists
+from src.exceptions.api.users import UserNotFoundHTTPException
+from src.exceptions.api.users import UserAlreadyExistsHTTPException
+
 
 router = APIRouter(
     prefix="/users",
@@ -39,7 +47,10 @@ async def list_users(
     response_model=UserReadSchema,
     status_code=status.HTTP_200_OK,
 )
-async def get_user(user_id: int, db: DbTransactionDep) -> UserReadSchema:
+async def get_user(
+    user_id: int,
+    db: DbTransactionDep
+) -> UserReadSchema:
     try:
         return await UsersService(db).get_one_by_id(user_id)
     except UserNotFound as ex:
@@ -51,7 +62,10 @@ async def get_user(user_id: int, db: DbTransactionDep) -> UserReadSchema:
     response_model=UserReadSchema,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_user(db: DbTransactionDep, data: UserCreateSchema) -> UserReadSchema:
+async def create_user(
+    db: DbTransactionDep,
+    data: UserCreateSchema
+) -> UserReadSchema:
     try:
         return await UsersService(db).create(data)
     except UserAlreadyExists as ex:
@@ -64,7 +78,9 @@ async def create_user(db: DbTransactionDep, data: UserCreateSchema) -> UserReadS
     status_code=status.HTTP_200_OK,
 )
 async def update_user(
-    user_id: int, db: DbTransactionDep, data: UserUpdateSchema
+    user_id: int,
+    db: DbTransactionDep,
+    data: UserUpdateSchema
 ) -> UserReadSchema:
     try:
         return await UsersService(db).update(user_id, data)
@@ -76,7 +92,10 @@ async def update_user(
     "/{user_id}",
     status_code=status.HTTP_200_OK,
 )
-async def delete_user(user_id: int, db: DbTransactionDep) -> dict[str, Any]:
+async def delete_user(
+    user_id: int,
+    db: DbTransactionDep
+) -> dict[str, Any]:
     try:
         deleted_id = await UsersService(db).delete(user_id)
         return {"status": "success", "id": deleted_id}
