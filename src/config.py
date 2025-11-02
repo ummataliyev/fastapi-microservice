@@ -21,13 +21,13 @@ class PostgresDatabaseSettings(BaseModel):
     Reads values from environment variables with defaults.
     """
 
-    name: str = os.getenv("POSTGRES_DB", "residential-service")
-    user: str = os.getenv("POSTGRES_USER", "postgres")
-    password: str = os.getenv("POSTGRES_PASSWORD", "password")
-    host: str = os.getenv("POSTGRES_HOST", "localhost")
-    port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    name: str = os.getenv("POSTGRES_DB")
+    user: str = os.getenv("POSTGRES_USER")
+    password: str = os.getenv("POSTGRES_PASSWORD")
+    host: str = os.getenv("POSTGRES_HOST")
+    port: int = int(os.getenv("POSTGRES_PORT"))
 
-    url: PostgresDsn = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}"  # type: ignore
+    url: PostgresDsn = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{name}"  # noqa
 
     @property
     def sync_url(self) -> str:

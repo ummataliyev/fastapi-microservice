@@ -10,9 +10,7 @@ from fastapi import APIRouter
 from src.api.users import router as users_router
 
 
-routers = (
-    users_router,
-)
+routers = (users_router,)
 
 main_router = APIRouter()
 """

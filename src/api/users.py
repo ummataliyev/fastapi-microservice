@@ -1,5 +1,5 @@
 from typing import Any
-from fastapi import Query, status, APIRouter
+from fastapi import status, APIRouter
 from src.services.users import UsersService
 from src.api.dependencies import PaginationDep, DbTransactionDep
 from src.schemas.users import UserReadSchema, UserCreateSchema, UserUpdateSchema
@@ -26,13 +26,11 @@ router = APIRouter(
 async def list_users(
     db: DbTransactionDep,
     pagination: PaginationDep,
-    search: str | None = Query(None, description="Search by email"),
 ) -> PaginatedResponseSchema:
     return await UsersService(db).get_list(
         limit=pagination.limit,
         offset=pagination.offset,
         current_page=pagination.current_page,
-        search=search,
     )
 
 

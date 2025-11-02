@@ -24,7 +24,7 @@ class UsersService(BaseService):
     async def get_one_by_id(self, user_id: int) -> UserReadSchema:
         try:
             user = await self.db.users.get_one(id=user_id)
-            return UserReadSchema(**user)
+            return user
         except UserNotFoundRepoException as ex:
             raise UserNotFound.from_repo(ex)
 
@@ -40,13 +40,10 @@ class UsersService(BaseService):
         limit: int = 10,
         offset: int = 0,
         current_page: int = 1,
-        search: str | None = None,
     ) -> PaginatedResponseSchema[UserReadSchema]:
-
         items = await self.db.users.get_all(
             limit=limit,
             offset=offset,
-            search=search,
         )
 
         total_items = await self.db.users.count()
@@ -73,7 +70,7 @@ class UsersService(BaseService):
         try:
             user = await self.db.users.add(data)
             await self.db.commit()
-            return UserReadSchema(**user)
+            return user
         except UserAlreadyExistsRepoException as ex:
             raise UserAlreadyExists.from_repo(ex)
 
@@ -82,11 +79,9 @@ class UsersService(BaseService):
         Update user email or password.
         """
         try:
-            updated_user = await self.db.users.update_one(
-                id=user_id, data=data, partially=True
-            )
+            user = await self.db.users.update_one(id=user_id, data=data, partially=True)
             await self.db.commit()
-            return UserReadSchema(**updated_user)
+            return user
         except UserNotFoundRepoException as ex:
             raise UserNotFound.from_repo(ex)
 
@@ -95,8 +90,8 @@ class UsersService(BaseService):
         Delete user and return the deleted ID.
         """
         try:
-            deleted = await self.db.users.delete_one(id=user_id)
+            user = await self.db.users.delete_one(id=user_id)
             await self.db.commit()
-            return deleted.id
+            return user.id
         except UserNotFoundRepoException as ex:
             raise UserNotFound.from_repo(ex)

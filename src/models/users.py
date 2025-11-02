@@ -22,14 +22,9 @@ class Users(Base, IDPkMixin, TimestampMixin, SoftDeletionMixin):
     """
 
     email: Mapped[str] = mapped_column(
-        String(255),
-        unique=True,
-        nullable=False,
-        index=True
+        String(255), unique=True, nullable=False, index=True
     )
-    password: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     def __repr__(self) -> str:
         return f"<User(email={self.email})>"

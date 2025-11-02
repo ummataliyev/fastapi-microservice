@@ -2,7 +2,6 @@ from src.exceptions.repository.base import BaseRepoException
 
 
 class UsersRepoException(BaseRepoException):
-
     message = "Users repository error"
 
 

@@ -10,7 +10,6 @@ from typing import Iterable
 
 from pydantic import BaseModel
 
-from sqlalchemy import or_
 from sqlalchemy import func
 from sqlalchemy import insert
 from sqlalchemy import select
@@ -135,15 +134,6 @@ class BaseRepository(Generic[T]):
 
         if filter_by:
             query = query.filter_by(**filter_by)
-
-        if search and hasattr(self.model, "name"):
-            query = query.where(
-                or_(
-                    self.model.name["uz"].astext.ilike(f"%{search}%"),
-                    self.model.name["ru"].astext.ilike(f"%{search}%"),
-                    self.model.name["en"].astext.ilike(f"%{search}%"),
-                )
-            )
 
         if with_rels:
             query = self._with_active_children(query)

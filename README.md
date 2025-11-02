@@ -2,9 +2,7 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://git.devsymfony.io/Namuna/residential-service.git
-   cd residential-service
-   ```
+.   ```
 
 2. **Set up environment variables:**
    - Create a `.env` file in the project's root directory.

@@ -6,6 +6,5 @@ from src.schemas.users import UserReadSchema
 
 
 class UsersMapper(BaseDataMapper):
-
     model = Users
     schema = UserReadSchema
