@@ -13,7 +13,7 @@ from src.api import main_router
 
 
 app = FastAPI(
-    title="Namuna's Residential Service API",
+    title="Fastapi Micro Service",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
