@@ -1,18 +1,14 @@
 from src.services.base import BaseService
-from src.schemas.users import (
-    UserCreateSchema,
-    UserUpdateSchema,
-    UserReadSchema,
-)
+
+from src.schemas.users import UserReadSchema
+from src.schemas.users import UserCreateSchema
+from src.schemas.users import UserUpdateSchema
+
 from src.schemas.pagination import PaginatedResponseSchema
-from src.exceptions.service.users import (
-    UserNotFound,
-    UserAlreadyExists,
-)
-from src.exceptions.repository.users import (
-    UserNotFoundRepoException,
-    UserAlreadyExistsRepoException,
-)
+from src.exceptions.service.users import UserNotFound
+from src.exceptions.service.users import UserAlreadyExists
+from src.exceptions.repository.users import UserNotFoundRepoException
+from src.exceptions.repository.users import UserAlreadyExistsRepoException
 
 
 class UsersService(BaseService):

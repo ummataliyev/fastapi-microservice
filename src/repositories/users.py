@@ -5,8 +5,11 @@ Repository for User persistence and retrieval.
 from sqlalchemy.exc import IntegrityError
 
 from src.models.users import Users
+
 from src.mappers.users import UsersMapper
+
 from src.repositories.base import BaseRepository
+
 from src.exceptions.repository.base import ObjectNotFoundRepoException
 from src.exceptions.repository.users import UserNotFoundRepoException
 from src.exceptions.repository.users import UserAlreadyExistsRepoException

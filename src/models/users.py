@@ -2,10 +2,10 @@
 User model for authentication and user management.
 """
 
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
-from sqlalchemy import String
 from src.db.postgres import Base
 from src.db.postgres.mixins import IDPkMixin
 from src.db.postgres.mixins import TimestampMixin
