@@ -2,7 +2,9 @@
 
 1. **Clone the repository:**
    ```bash
-.   ```
+   git clone git@github.com:ummataliyev/fastapi-microservice.git
+   cd fastapi-microservice
+   ```
 
 2. **Set up environment variables:**
    - Create a `.env` file in the project's root directory.
