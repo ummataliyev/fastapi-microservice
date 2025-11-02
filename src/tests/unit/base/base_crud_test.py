@@ -44,7 +44,11 @@ class ServiceTestBase:
         repo.add = AsyncMock(return_value=read_instance)
         self.mock_db.commit = AsyncMock()
 
-        create_obj = self.create_schema_cls(**self.default_create_payload) if self.create_schema_cls else self.default_create_payload
+        create_obj = (
+            self.create_schema_cls(**self.default_create_payload)
+            if self.create_schema_cls
+            else self.default_create_payload
+        )
         result = await self.service.create(create_obj)
 
         repo.add.assert_called_once()
@@ -73,10 +77,16 @@ class ServiceTestBase:
         repo.update_one = AsyncMock(return_value=read_instance)
         self.mock_db.commit = AsyncMock()
 
-        update_obj = self.update_schema_cls(**self.default_update_payload) if self.update_schema_cls else self.default_update_payload
+        update_obj = (
+            self.update_schema_cls(**self.default_update_payload)
+            if self.update_schema_cls
+            else self.default_update_payload
+        )
         result = await self.service.update(fake_id, update_obj)
 
-        repo.update_one.assert_called_once_with(id=fake_id, data=update_obj, partially=True)
+        repo.update_one.assert_called_once_with(
+            id=fake_id, data=update_obj, partially=True
+        )
         self.mock_db.commit.assert_awaited_once()
         assert result.id == fake_id
 

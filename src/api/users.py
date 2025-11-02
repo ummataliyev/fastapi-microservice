@@ -47,10 +47,7 @@ async def list_users(
     response_model=UserReadSchema,
     status_code=status.HTTP_200_OK,
 )
-async def get_user(
-    user_id: int,
-    db: DbTransactionDep
-) -> UserReadSchema:
+async def get_user(user_id: int, db: DbTransactionDep) -> UserReadSchema:
     try:
         return await UsersService(db).get_one_by_id(user_id)
     except UserNotFound as ex:
@@ -62,10 +59,7 @@ async def get_user(
     response_model=UserReadSchema,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_user(
-    db: DbTransactionDep,
-    data: UserCreateSchema
-) -> UserReadSchema:
+async def create_user(db: DbTransactionDep, data: UserCreateSchema) -> UserReadSchema:
     try:
         return await UsersService(db).create(data)
     except UserAlreadyExists as ex:
@@ -78,9 +72,7 @@ async def create_user(
     status_code=status.HTTP_200_OK,
 )
 async def update_user(
-    user_id: int,
-    db: DbTransactionDep,
-    data: UserUpdateSchema
+    user_id: int, db: DbTransactionDep, data: UserUpdateSchema
 ) -> UserReadSchema:
     try:
         return await UsersService(db).update(user_id, data)
@@ -92,10 +84,7 @@ async def update_user(
     "/{user_id}",
     status_code=status.HTTP_200_OK,
 )
-async def delete_user(
-    user_id: int,
-    db: DbTransactionDep
-) -> dict[str, Any]:
+async def delete_user(user_id: int, db: DbTransactionDep) -> dict[str, Any]:
     try:
         deleted_id = await UsersService(db).delete(user_id)
         return {"status": "success", "id": deleted_id}

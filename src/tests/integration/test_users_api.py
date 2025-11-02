@@ -30,7 +30,9 @@ class TestUsersAPI(BaseCRUDTest):
         assert created["email"] == "newuser@example.com"
 
     async def test_update_user(self):
-        updated = await self.update_item(self.ac, self.user_id_1, email="updated@example.com")
+        updated = await self.update_item(
+            self.ac, self.user_id_1, email="updated@example.com"
+        )
         assert updated["email"] == "updated@example.com"
 
     async def test_delete_user(self):

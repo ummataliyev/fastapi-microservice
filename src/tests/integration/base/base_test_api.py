@@ -12,7 +12,9 @@ class BaseTestAPI:
         return resp.json()
 
     @staticmethod
-    async def patch(ac, url: str, payload: dict = None, expected_status: int = 200) -> dict:
+    async def patch(
+        ac, url: str, payload: dict = None, expected_status: int = 200
+    ) -> dict:
         resp = await ac.patch(url, json=payload or {})
         assert resp.status_code == expected_status, resp.json()
         return resp.json()

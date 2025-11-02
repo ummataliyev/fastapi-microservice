@@ -6,7 +6,10 @@ from src.services.base import BaseService
 from src.schemas.users import UserReadSchema, UserCreateSchema, UserUpdateSchema
 from src.schemas.pagination import PaginatedResponseSchema
 from src.exceptions.service.users import UserNotFound, UserAlreadyExists
-from src.exceptions.repository.users import UserNotFoundRepoException, UserAlreadyExistsRepoException
+from src.exceptions.repository.users import (
+    UserNotFoundRepoException,
+    UserAlreadyExistsRepoException,
+)
 
 
 class UsersService(BaseService):
@@ -28,7 +31,9 @@ class UsersService(BaseService):
         except UserNotFoundRepoException as ex:
             raise UserNotFound.from_repo(ex)
 
-    async def get_list(self, limit: int = 10, offset: int = 0, current_page: int = 1) -> PaginatedResponseSchema[UserReadSchema]:
+    async def get_list(
+        self, limit: int = 10, offset: int = 0, current_page: int = 1
+    ) -> PaginatedResponseSchema[UserReadSchema]:
         items = await self.db.users.get_all(limit=limit, offset=offset)
         total_items = await self.db.users.count()
         return self.build_paginated_response(
@@ -36,7 +41,7 @@ class UsersService(BaseService):
             total_items=total_items,
             current_page=current_page,
             per_page=limit,
-            message="Users retrieved successfully"
+            message="Users retrieved successfully",
         )
 
     async def create(self, data: UserCreateSchema) -> UserReadSchema:

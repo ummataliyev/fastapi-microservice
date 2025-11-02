@@ -20,7 +20,9 @@ class BaseCRUDTest:
         return await BaseTestAPI.get(ac, f"{self.endpoint}/{item_id}")
 
     async def update_item(self, ac, item_id, **overrides):
-        return await BaseTestAPI.patch(ac, f"{self.endpoint}/{item_id}", self.payload_fn(**overrides))
+        return await BaseTestAPI.patch(
+            ac, f"{self.endpoint}/{item_id}", self.payload_fn(**overrides)
+        )
 
     async def delete_item(self, ac, item_id):
         return await BaseTestAPI.delete(ac, f"{self.endpoint}/{item_id}")
