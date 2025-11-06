@@ -14,21 +14,15 @@ for i in 1 2 3 4 5; do
 done
 
 echo 'Creating buckets...'
-/usr/bin/mc mb -p local/apartments || true
-/usr/bin/mc mb -p local/sections || true
-/usr/bin/mc mb -p local/floors || true
+/usr/bin/mc mb -p local/files || true
 
 echo 'Setting public download policies...'
-/usr/bin/mc anonymous set download local/apartments
-/usr/bin/mc anonymous set download local/sections
-/usr/bin/mc anonymous set download local/floors
+/usr/bin/mc anonymous set download local/files
 
 
 # Verify policies
 echo 'Verifying policies...'
-/usr/bin/mc anonymous get local/apartments
-/usr/bin/mc anonymous get local/sections
-/usr/bin/mc anonymous get local/floors
+/usr/bin/mc anonymous get local/files
 
 echo 'All buckets created and configured successfully!'
 exit 0
