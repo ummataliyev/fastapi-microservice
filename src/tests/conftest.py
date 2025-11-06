@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.main import app
 from src.db.postgres import Base
-from src.configs.config import settings
+from src.core.config import settings
 from src.managers.transaction import TransactionManager
 from src.api.dependencies.db import get_db_transaction
 

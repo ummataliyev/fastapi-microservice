@@ -11,7 +11,7 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from src.configs.config import settings
+from src.core.config import settings
 from src.db.postgres.database import Base
 
 

@@ -11,7 +11,7 @@ from fastapi import Query
 
 from pydantic import BaseModel
 
-from src.configs.config import settings
+from src.core.config import settings
 
 
 T = TypeVar("T")

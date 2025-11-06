@@ -13,7 +13,7 @@ from datetime import timedelta
 
 from passlib.context import CryptContext
 
-from src.configs.config import settings
+from src.core.config import settings
 
 
 class JWTAuth:
