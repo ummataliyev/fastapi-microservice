@@ -3,27 +3,25 @@ Migration environment setup for Alembic + async SQLAlchemy.
 """
 
 import asyncio
+
+from alembic import context
+
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
 
-# ✅ Import application settings
-from src.config import settings  # Adjust path if needed
+from src.configs.config import settings
 from src.db.postgres.database import Base
 
-# Alembic Config object
+
 config = context.config
 
-# Override sqlalchemy.url with dynamic Pydantic settings
 config.set_main_option("sqlalchemy.url", settings.postgres.build_url())
 
-# Logging config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadata from SQLAlchemy Base models
 target_metadata = Base.metadata
 
 
@@ -58,7 +56,7 @@ async def run_migrations_online() -> None:
     """
     connectable = create_async_engine(
         settings.postgres.build_url(),
-        poolclass=pool.NullPool,  # Optional: avoid connection pooling during migrations
+        poolclass=pool.NullPool,
     )
 
     async with connectable.connect() as connection:
@@ -66,7 +64,6 @@ async def run_migrations_online() -> None:
     await connectable.dispose()
 
 
-# Entry point
 if context.is_offline_mode():
     run_migrations_offline()
 else:

@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.main import app
-from src.config import settings
 from src.db.postgres import Base
+from src.configs.config import settings
 from src.managers.transaction import TransactionManager
 from src.api.dependencies.db import get_db_transaction
 
