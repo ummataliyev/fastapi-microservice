@@ -39,6 +39,7 @@ class UserReadSchema(UUIDSchema, TimestampSchema, BaseModel):
     """
 
     email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., min_length=6)
 
     class Config:
         from_attributes = True

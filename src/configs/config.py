@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings
 BASE_DIR = Path(__file__).parent.parent
 
 
-class PostgresDatabaseSettings(BaseModel):
+class DatabaseSettings(BaseModel):
     """
     Database connection settings for PostgreSQL.
     Reads values from environment variables with defaults.
@@ -61,14 +61,26 @@ class PaginationSettings(BaseModel):
         return self.max_entities_per_page
 
 
+class JWTSettings(BaseSettings):
+    """
+    Application settings with JWT configuration.
+    """
+
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    ALGORITHM: str = os.getenv("ALGORITHM")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+    REFRESH_TOKEN_EXPIRE_DAYS: int = os.getenv("REFRESH_TOKEN_EXPIRE_DAYS")
+
+
 class Settings(BaseSettings):
     """
     Main application settings combining all modules.
     Uses Pydantic BaseSettings to allow environment overrides.
     """
 
+    jwt: JWTSettings = JWTSettings()
+    postgres: DatabaseSettings = DatabaseSettings()
     pagination: PaginationSettings = PaginationSettings()
-    postgres: PostgresDatabaseSettings = PostgresDatabaseSettings()
 
     model_config = ConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
