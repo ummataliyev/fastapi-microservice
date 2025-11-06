@@ -2,8 +2,12 @@
 Schemas for User API endpoints.
 """
 
-from pydantic import BaseModel, Field, EmailStr
-from src.schemas.schemas import UUIDSchema, TimestampSchema
+from pydantic import Field
+from pydantic import EmailStr
+from pydantic import BaseModel
+
+from src.schemas.base import UUIDSchema
+from src.schemas.base import TimestampSchema
 
 
 class BaseUserSchema(BaseModel):
