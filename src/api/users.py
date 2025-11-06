@@ -1,9 +1,14 @@
+"""
+User management API endpoints.
+"""
+
 from typing import Any
 
 from fastapi import status
 from fastapi import APIRouter
 
 from src.services.users import UsersService
+from src.api.dependencies import CurrentUser
 from src.api.dependencies import PaginationDep
 from src.api.dependencies import DbTransactionDep
 
@@ -28,13 +33,21 @@ router = APIRouter(
     "",
     response_model=PaginatedResponseSchema,
     status_code=status.HTTP_200_OK,
-    summary="Get Users List",
-    description="Retrieve a paginated list of users with optional email search.",
+    summary="List users",
+    description="Retrieve a paginated list of all users with optional email filtering",
 )
-async def list_users(
+async def list(
     db: DbTransactionDep,
     pagination: PaginationDep,
+    current_user: CurrentUser
 ) -> PaginatedResponseSchema:
+    """
+    Get a paginated list of users.
+
+    :param db: Database transaction dependency.
+    :param pagination: Pagination parameters (limit, offset, current_page).
+    :return: Paginated list of user records.
+    """
     return await UsersService(db).get_list(
         limit=pagination.limit,
         offset=pagination.offset,
@@ -46,8 +59,21 @@ async def list_users(
     "/{user_id}",
     response_model=UserReadSchema,
     status_code=status.HTTP_200_OK,
+    summary="Get user by ID",
+    description="Retrieve detailed information for a specific user by ID",
 )
-async def get_user(user_id: int, db: DbTransactionDep) -> UserReadSchema:
+async def get(
+    user_id: int,
+    db: DbTransactionDep,
+    current_user: CurrentUser
+) -> UserReadSchema:
+    """
+    Get user details by ID.
+
+    :param user_id: User ID to retrieve.
+    :param db: Database transaction dependency.
+    :return: User details.
+    """
     try:
         return await UsersService(db).get_one_by_id(user_id)
     except UserNotFound as ex:
@@ -58,8 +84,22 @@ async def get_user(user_id: int, db: DbTransactionDep) -> UserReadSchema:
     "",
     response_model=UserReadSchema,
     status_code=status.HTTP_201_CREATED,
+    summary="Create new user",
+    description="Create a new user record in the database",
 )
-async def create_user(db: DbTransactionDep, data: UserCreateSchema) -> UserReadSchema:
+async def create(
+    db: DbTransactionDep,
+    data: UserCreateSchema,
+    current_user: CurrentUser,
+) -> UserReadSchema:
+    """
+    Create a new user.
+
+    :param db: Database transaction dependency.
+    :param data: User creation payload.
+    :return: Created user record.
+    :raises UserAlreadyExistsHTTPException: If a user with the same email exists.
+    """
     try:
         return await UsersService(db).create(data)
     except UserAlreadyExists as ex:
@@ -70,10 +110,23 @@ async def create_user(db: DbTransactionDep, data: UserCreateSchema) -> UserReadS
     "/{user_id}",
     response_model=UserReadSchema,
     status_code=status.HTTP_200_OK,
+    summary="Update user",
+    description="Update user information partially by user ID.",
 )
-async def update_user(
-    user_id: int, db: DbTransactionDep, data: UserUpdateSchema
+async def update(
+    user_id: int,
+    db: DbTransactionDep,
+    data: UserUpdateSchema,
+    current_user: CurrentUser,
 ) -> UserReadSchema:
+    """
+    Update user information by ID.
+
+    :param user_id: ID of the user to update.
+    :param db: Database transaction dependency.
+    :param data: Updated user data.
+    :return: Updated user record.
+    """
     try:
         return await UsersService(db).update(user_id, data)
     except UserNotFound as ex:
@@ -83,8 +136,21 @@ async def update_user(
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_200_OK,
+    summary="Delete user",
+    description="Delete a user from the database by ID.",
 )
-async def delete_user(user_id: int, db: DbTransactionDep) -> dict[str, Any]:
+async def delete(
+    user_id: int,
+    db: DbTransactionDep,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """
+    Delete a user by ID.
+
+    :param user_id: ID of the user to delete.
+    :param db: Database transaction dependency.
+    :return: Deletion status with user ID.
+    """
     try:
         deleted_id = await UsersService(db).delete(user_id)
         return {"status": "success", "id": deleted_id}

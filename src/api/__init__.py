@@ -7,10 +7,14 @@ into a single `main_router` that is then mounted on the FastAPI application.
 
 from fastapi import APIRouter
 
+from src.api.auth import router as auth_router
 from src.api.users import router as users_router
 
 
-routers = (users_router,)
+routers = (
+    auth_router,
+    users_router,
+)
 
 main_router = APIRouter()
 """
