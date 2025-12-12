@@ -7,7 +7,6 @@ that initializes repositories and handles session commit/rollback.
 
 from typing import Type
 from typing import TypeVar
-from typing import Generic
 from typing import Callable
 from typing import Optional
 
@@ -23,10 +22,11 @@ from src.repositories.users import UsersRepository
 T = TypeVar("T")
 
 
-class TransactionManager(Generic[T], BaseManager):
+class TransactionManager(BaseManager):
     """
-    Generic transaction manager that initializes repositories
-    and manages database sessions with commit/rollback.
+    Asynchronous transaction manager that handles database session lifecycle,
+    commits, rollbacks, and repository initialization for easy access
+    within an async context.
     """
 
     users: UsersRepository
@@ -37,27 +37,25 @@ class TransactionManager(Generic[T], BaseManager):
         **repositories: Type[BaseRepository],
     ):
         """
-        Initialize the transaction manager with a session factory
-        and optional repositories.
+        Initialize the transaction manager.
 
-        :param session_factory: Callable that returns an AsyncSession.
-        :param repositories: Additional repository classes to include.
+        :param session_factory: Callable returning an AsyncSession.
+        :param repositories: Optional extra repository classes to include.
+
         """
-
         self.session_factory = session_factory
         self._repositories = {
             "users": UsersRepository,
-            **repositories,
+            **repositories
         }
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "TransactionManager":
         """
-        Enter the async context and initialize repositories.
+        Enter the asynchronous context manager.
 
         :return: The TransactionManager instance with initialized repositories.
         :rtype: TransactionManager
         """
-
         self.session = await self.session_factory().__aenter__()
         for name, repo_cls in self._repositories.items():
             setattr(self, name, repo_cls(self.session))
@@ -68,36 +66,31 @@ class TransactionManager(Generic[T], BaseManager):
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """
-        Exit the async context.
+        Exit the asynchronous context manager.
 
-        Rolls back the session if an exception occurred and closes the session.
-
-        :param exc_type: The type of exception raised in the context, if any.
-        :param exc_val: The exception instance raised in the context, if any.
-        :param exc_tb: The traceback of the exception raised, if any.
+        :param exc_type: Exception type, if any.
+        :param exc_val: Exception instance, if any.
+        :param exc_tb: Traceback, if any.
         :return: None
         """
-
         if exc_type:
             await self.session.rollback()
         await self.session.close()
 
-    async def commit(self):
+    async def commit(self) -> None:
         """
-        Commit the current session transaction.
+        Commit the current transaction.
 
         :return: None
         """
-
         await self.session.commit()
 
-    async def rollback(self):
+    async def rollback(self) -> None:
         """
-        Rollback the current session transaction.
+        Rollback the current transaction.
 
         :return: None
         """
-
         await self.session.rollback()
