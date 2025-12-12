@@ -53,7 +53,7 @@ async def get_current_user(
         )
 
 
-CurrentUser = Annotated[
+CurrentUserDep = Annotated[
     UserReadSchema,
     Depends(get_current_user)
 ]

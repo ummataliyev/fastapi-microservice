@@ -8,8 +8,9 @@ from fastapi import status
 from fastapi import APIRouter
 
 from src.services.users import UsersService
-from src.api.dependencies import CurrentUser
+
 from src.api.dependencies import PaginationDep
+from src.api.dependencies import CurrentUserDep
 from src.api.dependencies import DbTransactionDep
 
 from src.schemas.users import UserReadSchema
@@ -39,7 +40,7 @@ router = APIRouter(
 async def list(
     db: DbTransactionDep,
     pagination: PaginationDep,
-    current_user: CurrentUser
+    current_user: CurrentUserDep
 ) -> PaginatedResponseSchema:
     """
     Get a paginated list of users.
@@ -65,7 +66,7 @@ async def list(
 async def get(
     user_id: int,
     db: DbTransactionDep,
-    current_user: CurrentUser
+    current_user: CurrentUserDep
 ) -> UserReadSchema:
     """
     Get user details by ID.
@@ -90,7 +91,7 @@ async def get(
 async def create(
     db: DbTransactionDep,
     data: UserCreateSchema,
-    current_user: CurrentUser,
+    current_user: CurrentUserDep,
 ) -> UserReadSchema:
     """
     Create a new user.
@@ -117,7 +118,7 @@ async def update(
     user_id: int,
     db: DbTransactionDep,
     data: UserUpdateSchema,
-    current_user: CurrentUser,
+    current_user: CurrentUserDep,
 ) -> UserReadSchema:
     """
     Update user information by ID.
@@ -142,7 +143,7 @@ async def update(
 async def delete(
     user_id: int,
     db: DbTransactionDep,
-    current_user: CurrentUser,
+    current_user: CurrentUserDep,
 ) -> dict[str, Any]:
     """
     Delete a user by ID.

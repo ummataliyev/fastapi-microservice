@@ -7,13 +7,14 @@ from fastapi import APIRouter
 from fastapi import HTTPException
 
 from src.services.auth import AuthService
+
 from src.schemas.auth import LoginSchema
 from src.schemas.users import UserReadSchema
 from src.schemas.users import UserCreateSchema
 from src.schemas.auth import RefreshTokenSchema
 from src.schemas.auth import TokenResponseSchema
 
-from src.api.dependencies import CurrentUser
+from src.api.dependencies import CurrentUserDep
 from src.api.dependencies import DbTransactionDep
 
 from src.exceptions.service.auth import InvalidToken
@@ -34,7 +35,7 @@ router = APIRouter(
     response_model=TokenResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description=("Creates a new user account and returns access and refresh tokens")
+    description=("Creates a new user account and returns access and refresh tokens") # noqa
 )
 async def register(
     db: DbTransactionDep,
@@ -120,10 +121,10 @@ async def refresh_token(
     "/me",
     response_model=UserReadSchema,
     summary="Get current user information",
-    description=("Retrieves information about the currently authenticated user")
+    description=("Retrieves information about the currently authenticated user") # noqa
 )
 async def get_current_user_info(
-    current_user: CurrentUser
+    current_user: CurrentUserDep
 ):
     """
     Get current authenticated user information.
