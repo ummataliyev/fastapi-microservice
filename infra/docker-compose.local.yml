@@ -3,7 +3,7 @@ services:
     build:
       context: ../
       dockerfile: infra/Dockerfile
-    container_name: micro-service-api
+    container_name: service-api
     command: ./infra/commands/api.sh
     env_file:
       - .env
@@ -24,7 +24,7 @@ services:
 
   db:
     image: postgres:17.5
-    container_name: micro-service-db
+    container_name: service-db
     env_file:
       - .env
     ports:
@@ -43,7 +43,6 @@ services:
 
 volumes:
   postgres_data:
-  minio_data:
 
 networks:
   micro-service-back-tier:
