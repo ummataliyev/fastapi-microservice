@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   api:
     build:
@@ -7,8 +9,6 @@ services:
     command: ./infra/commands/api.sh
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     volumes:
       - ../:/app
     depends_on:
@@ -40,6 +40,17 @@ services:
       retries: 5
       start_period: 5s
 
+  nginx:
+    image: nginx:alpine
+    container_name: service-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - micro-service-back-tier
 
 volumes:
   postgres_data:

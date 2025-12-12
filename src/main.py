@@ -7,6 +7,7 @@ Swagger (docs) and ReDoc endpoints are also configured here.
 """
 
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api import main_router
@@ -26,6 +27,23 @@ FastAPI application configured with metadata.
 :param version: Version string of the API.
 :param root_path: Root path for all API routes.
 """
+
+
+@app.get(
+        path="/",
+        response_class=PlainTextResponse,
+        summary="Service status",
+        tags=["Status"]
+    )
+async def root():
+    """
+    Root endpoint for health/status check.
+
+    Returns:
+        Plain text status message
+    """
+    return "Service is running!"
+
 
 app.include_router(main_router)
 """
