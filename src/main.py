@@ -10,8 +10,31 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
 from src.api import main_router
 
+
+trace.set_tracer_provider(
+    TracerProvider(
+        resource=Resource.create(
+            {
+                "service.name":
+                "fastapi-microservice"
+            }
+        )
+    )
+)
+jaeger_exporter = JaegerExporter(
+    agent_host_name="jaeger",
+    agent_port=6831,
+)
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
 
 app = FastAPI(
     title="Fastapi Micro Service",
@@ -20,13 +43,8 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
-"""
-FastAPI application configured with metadata.
 
-:param title: Title of the API.
-:param version: Version string of the API.
-:param root_path: Root path for all API routes.
-"""
+FastAPIInstrumentor.instrument_app(app)
 
 
 @app.get(

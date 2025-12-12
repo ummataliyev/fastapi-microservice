@@ -52,6 +52,17 @@ services:
     networks:
       - micro-service-back-tier
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.44
+    container_name: service-jaeger
+    ports:
+      - "16686:16686"
+      - "6831:6831/udp"
+    networks:
+      micro-service-back-tier:
+        aliases:
+          - jaeger
+
 volumes:
   postgres_data:
 
