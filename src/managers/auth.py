@@ -93,8 +93,9 @@ class AuthManager:
         if token_type != "access":
             raise InvalidTokenType("Token must be access type")
 
-        user_id = payload.get("sub")
-        user = await self.tm.users.get_by_id(user_id)
+        user_id = int(payload.get("sub"))
+        user = await self.tm.users.get_one(id=user_id)
+
         if not user:
             raise UserNotFound("User not found")
 
