@@ -1,5 +1,5 @@
 """
-FastAPI dependencies for JWT authentication.
+FastAPI dependency for retrieving the current authenticated user.
 """
 
 from typing import Annotated
@@ -10,12 +10,15 @@ from fastapi import HTTPException
 from fastapi.security import HTTPBearer
 from fastapi.security import HTTPAuthorizationCredentials
 
-from src.services.auth import AuthService
+from src.managers.auth import AuthManager
+
 from src.schemas.users import UserReadSchema
+
 from src.api.dependencies.db import DbTransactionDep
+
 from src.exceptions.service.auth import InvalidToken
-from src.exceptions.service.users import UserNotFound
 from src.exceptions.service.auth import InvalidTokenType
+from src.exceptions.service.users import UserNotFound
 
 
 security = HTTPBearer()
@@ -26,29 +29,23 @@ async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
 ) -> UserReadSchema:
     """
-    Dependency to get current authenticated user from JWT token.
+    Retrieve the currently authenticated user from a JWT token.
 
-    :param credentials: HTTP Bearer credentials containing JWT token.
-    :param auth_service: Authentication service instance.
-    :return: Current user data.
-    :raises HTTPException: If authentication fails.
+    :param db: Database transaction dependency for repository access.
+    :param credentials: HTTP Bearer credentials containing the JWT token.
+    :return: UserReadSchema instance representing the current user.
+    :raises HTTPException: 401 if token is invalid, wrong type, or user not found.
     """
     token = credentials.credentials
 
+    auth_manager = AuthManager(db)
     try:
-        user = await AuthService(db).get_current_user(token)
+        user = await auth_manager.get_current_user(token)
         return user
-    except (InvalidToken, InvalidTokenType) as ex:
+    except (InvalidToken, InvalidTokenType, UserNotFound) as ex:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(ex),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    except UserNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
