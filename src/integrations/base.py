@@ -1,123 +1,135 @@
 """
 Base HTTP client integration using httpx.AsyncClient.
-Provides basic GET, POST, DELETE methods with retries, timeout, and JSON response handling.
+Provides asynchronous GET, POST, DELETE methods with retries, circuit breaker,
+timeout handling, and JSON response parsing.
 """
 
-import json
 import httpx
 
 from typing import Any
 from typing import Optional
 
 from src.core.config import settings
+from src.core.resilience.retry import AsyncHTTPRetry
+from src.core.resilience.circuit_breaker import CircuitBreakerFactory
 
 
 class BaseHTTPClient:
     """
-    Base asynchronous HTTP client using httpx.AsyncClient.
+    Base asynchronous HTTP client with retry + circuit breaker.
 
-    Provides basic GET, POST, DELETE methods with retries, timeout, and JSON response handling. # noqa
-
-    :param base_url: The base URL for all HTTP requests.
-    :param timeout: Optional timeout in seconds for the requests.
+    :param base_url: Base URL for the HTTP service.
+    :param service_name: Unique name for the downstream service (used for circuit breaker).
+    :param timeout: Optional timeout in seconds for HTTP requests.
     """
 
-    def __init__(self, base_url: str, timeout: Optional[float] = None):
+    def __init__(
+        self,
+        base_url: str,
+        service_name: str,
+        timeout: Optional[float] = None,
+    ):
         self.base_url = base_url.rstrip("/")
+        self.breaker = CircuitBreakerFactory(service_name)
+        self.retry = AsyncHTTPRetry(
+            attempts=settings.http_client.retries,
+            min_wait=1,
+            max_wait=5,
+        )
+
         timeout_val = timeout or settings.http_client.timeout
         connect_timeout = settings.http_client.connect_timeout
-        retries = settings.http_client.retries
 
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout_val, connect=connect_timeout),
-            transport=httpx.AsyncHTTPTransport(retries=retries),
             limits=httpx.Limits(
                 max_connections=settings.http_client.pool_maxsize,
-                max_keepalive_connections=settings.http_client.pool_connections, # noqa
+                max_keepalive_connections=settings.http_client.pool_connections,
             ),
         )
 
     def _build_url(self, path: str) -> str:
         """
-        Build the full URL by combining the base URL and the path.
+        Build the full URL for a given endpoint path.
 
-        :param path: The endpoint path.
+        :param path: Endpoint path (e.g., "/users").
         :return: Full URL string.
         """
         return f"{self.base_url}{path}"
 
-    async def get(
-            self,
-            path: str,
-            params: Optional[dict[str, Any]] = None
-    ) -> dict[str, Any]:
+    async def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
         """
-        Perform an HTTP GET request.
+        Perform a low-level HTTP request.
+
+        :param method: HTTP method (GET, POST, DELETE, etc.).
+        :param path: Endpoint path.
+        :param kwargs: Additional arguments to pass to httpx.AsyncClient.request.
+        :return: httpx.Response object.
+        :raises httpx.HTTPStatusError: If the HTTP response status indicates an error.
+        """
+        url = self._build_url(path)
+        response = await self.client.request(method, url, **kwargs)
+        response.raise_for_status()
+        return response
+
+    async def _call(self, method: str, path: str, **kwargs) -> httpx.Response:
+        """
+        Execute HTTP request via retry and circuit breaker layers.
+
+        :param method: HTTP method (GET, POST, DELETE, etc.).
+        :param path: Endpoint path.
+        :param kwargs: Additional keyword arguments for the request.
+        :return: httpx.Response object.
+        """
+        retryable_request = self.retry.decorator()(self._request)
+        return await self.breaker.call(retryable_request, method, path, **kwargs)
+
+    async def get(self, path: str, params: Optional[dict[str, Any]] = None) -> dict:
+        """
+        Perform a GET request and return JSON response.
 
         :param path: Endpoint path.
         :param params: Optional query parameters.
-        :return: JSON response as a dictionary.
-        :raises httpx.HTTPStatusError: If the response status is an error.
-        :raises Exception: For other unexpected errors.
+        :return: Parsed JSON response as a dictionary.
         """
-        url = self._build_url(path)
-        response = await self.client.get(url, params=params)
-        response.raise_for_status()
+        response = await self._call("GET", path, params=params)
         return response.json()
 
-    async def post(
-            self,
-            path: str,
-            json: Optional[dict[str, Any]] = None
-    ) -> dict[str, Any]:
+    async def post(self, path: str, json: Optional[dict[str, Any]] = None) -> dict:
         """
-        Perform an HTTP POST request.
+        Perform a POST request with optional JSON body.
 
         :param path: Endpoint path.
-        :param json: Optional JSON body.
-        :return: JSON response as a dictionary.
-        :raises httpx.HTTPStatusError: If the response status is an error.
-        :raises Exception: For other unexpected errors.
+        :param json: Optional JSON payload.
+        :return: Parsed JSON response as a dictionary.
         """
-        url = self._build_url(path)
-        response = await self.client.post(url, json=json)
-        response.raise_for_status()
+        response = await self._call("POST", path, json=json)
         return response.json()
 
-    async def delete(
-            self,
-            path: str,
-            params: Optional[dict[str, Any]] = None
-    ) -> None:
+    async def delete(self, path: str, params: Optional[dict[str, Any]] = None) -> None:
         """
-        Perform an HTTP DELETE request.
+        Perform a DELETE request.
 
         :param path: Endpoint path.
         :param params: Optional query parameters.
         :return: None
-        :raises httpx.HTTPStatusError: If the response status is an error.
-        :raises Exception: For other unexpected errors.
         """
-        url = self._build_url(path)
-        response = await self.client.delete(url, params=params)
-        response.raise_for_status()
+        await self._call("DELETE", path, params=params)
 
     async def post_no_content(
-            self,
-            path: str,
-            params: Optional[dict[str, Any]] = None
+        self,
+        path: str,
+        json: Optional[dict[str, Any]] = None,
     ) -> None:
         """
-        Perform an HTTP POST request expecting no content (204) or optional 404.
+        Perform a POST request expecting no content (204) or optional 404.
 
         :param path: Endpoint path.
-        :param json: Optional JSON body.
+        :param json: Optional JSON payload.
         :return: None
-        :raises httpx.HTTPStatusError: If the response status is unexpected.
-        :raises Exception: For other unexpected errors.
+        :raises httpx.HTTPStatusError: If response status is unexpected.
         """
-        url = self._build_url(path)
-        response = await self.client.post(url, json=json)
+        response = await self._call("POST", path, json=json)
         if response.status_code not in (204, 404):
             response.raise_for_status()
 

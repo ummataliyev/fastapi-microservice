@@ -7,9 +7,10 @@ from fastapi import Request
 from fastapi import APIRouter
 from fastapi import HTTPException
 
-from src.core.limiter import limiter
 
 from src.services.auth import AuthService
+
+from src.core.throttle.limiter import limiter
 
 from src.schemas.auth import LoginSchema
 from src.schemas.users import UserReadSchema

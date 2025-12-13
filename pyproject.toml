@@ -21,6 +21,7 @@ dependencies = [
     "opentelemetry-sdk>=1.39.1",
     "passlib>=1.7.4",
     "psycopg2-binary>=2.9.10",
+    "pybreaker>=1.4.1",
     "pydantic-settings>=2.10.1",
     "pydantic[email]>=2.11.7",
     "pyjwt>=2.10.1",
@@ -31,5 +32,6 @@ dependencies = [
     "redis>=7.1.0",
     "ruff>=0.12.11",
     "sqlalchemy>=2.0.43",
+    "tenacity>=9.1.2",
     "uvicorn>=0.35.0",
 ]

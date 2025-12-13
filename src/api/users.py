@@ -8,9 +8,9 @@ from fastapi import status
 from fastapi import Request
 from fastapi import APIRouter
 
-from src.core.limiter import limiter
-
 from src.services.users import UsersService
+
+from src.core.throttle.limiter import limiter
 
 from src.api.dependencies import PaginationDep
 from src.api.dependencies import CurrentUserDep
