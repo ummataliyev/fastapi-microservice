@@ -3,8 +3,11 @@ Authentication API endpoints.
 """
 
 from fastapi import status
+from fastapi import Request
 from fastapi import APIRouter
 from fastapi import HTTPException
+
+from src.core.limiter import limiter
 
 from src.services.auth import AuthService
 
@@ -37,9 +40,11 @@ router = APIRouter(
     summary="Register a new user",
     description=("Creates a new user account and returns access and refresh tokens") # noqa
 )
+@limiter.ppd_limiter()
 async def register(
     db: DbTransactionDep,
     data: UserCreateSchema,
+    request: Request,
 ):
     """
     Register a new user and receive access and refresh tokens.
@@ -64,9 +69,11 @@ async def register(
     summary="Authenticate user and receive tokens",
     description="Authenticate user and return access/refresh tokens."
 )
+@limiter.ppd_limiter()
 async def login(
     db: DbTransactionDep,
     credentials: LoginSchema,
+    request: Request,
 ):
     """
     Authenticate user and receive access and refresh tokens.
@@ -91,9 +98,11 @@ async def login(
     summary="Refresh access token",
     description=("Generates a new access token using a valid refresh token")
 )
+@limiter.ppd_limiter()
 async def refresh_token(
     db: DbTransactionDep,
     data: RefreshTokenSchema,
+    request: Request,
 ):
     """
     Refresh access token using refresh token.
@@ -123,8 +132,10 @@ async def refresh_token(
     summary="Get current user information",
     description=("Retrieves information about the currently authenticated user") # noqa
 )
+@limiter.ppd_limiter()
 async def get_current_user_info(
-    current_user: CurrentUserDep
+    current_user: CurrentUserDep,
+    request: Request,
 ):
     """
     Get current authenticated user information.

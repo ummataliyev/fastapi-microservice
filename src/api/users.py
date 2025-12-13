@@ -5,7 +5,10 @@ User management API endpoints.
 from typing import Any
 
 from fastapi import status
+from fastapi import Request
 from fastapi import APIRouter
+
+from src.core.limiter import limiter
 
 from src.services.users import UsersService
 
@@ -37,10 +40,12 @@ router = APIRouter(
     summary="List users",
     description="Retrieve a paginated list of all users with optional email filtering",
 )
+@limiter.get_limiter()
 async def list(
     db: DbTransactionDep,
     pagination: PaginationDep,
-    current_user: CurrentUserDep
+    current_user: CurrentUserDep,
+    request: Request,
 ) -> PaginatedResponseSchema:
     """
     Get a paginated list of users.
@@ -63,10 +68,12 @@ async def list(
     summary="Get user by ID",
     description="Retrieve detailed information for a specific user by ID",
 )
+@limiter.get_limiter()
 async def get(
     user_id: int,
     db: DbTransactionDep,
-    current_user: CurrentUserDep
+    current_user: CurrentUserDep,
+    request: Request,
 ) -> UserReadSchema:
     """
     Get user details by ID.
@@ -88,10 +95,12 @@ async def get(
     summary="Create new user",
     description="Create a new user record in the database",
 )
+@limiter.ppd_limiter()
 async def create(
     db: DbTransactionDep,
     data: UserCreateSchema,
     current_user: CurrentUserDep,
+    request: Request,
 ) -> UserReadSchema:
     """
     Create a new user.
@@ -114,11 +123,13 @@ async def create(
     summary="Update user",
     description="Update user information partially by user ID.",
 )
+@limiter.ppd_limiter()
 async def update(
     user_id: int,
     db: DbTransactionDep,
     data: UserUpdateSchema,
     current_user: CurrentUserDep,
+    request: Request,
 ) -> UserReadSchema:
     """
     Update user information by ID.
@@ -140,10 +151,12 @@ async def update(
     summary="Delete user",
     description="Delete a user from the database by ID.",
 )
+@limiter.ppd_limiter()
 async def delete(
     user_id: int,
     db: DbTransactionDep,
     current_user: CurrentUserDep,
+    request: Request,
 ) -> dict[str, Any]:
     """
     Delete a user by ID.

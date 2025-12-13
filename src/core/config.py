@@ -43,6 +43,18 @@ class DatabaseSettings(BaseSettings):
         return self.url
 
 
+class RedisSettings(BaseSettings):
+    """
+    Redis connection settings.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="REDIS_")
+
+    host: str = Field(default="redis", alias="HOST")
+    port: int = Field(default=6379, alias="PORT")
+    db: int = Field(default=0, alias="DB")
+
+
 class PaginationSettings(BaseSettings):
     """
     Pagination-related configuration.
@@ -113,6 +125,39 @@ class HTTPClientSettings(BaseSettings):
         return v
 
 
+class RateLimitSettings(BaseSettings):
+    """
+    Rate limiting configuration for API endpoints.
+    """
+    model_config = SettingsConfigDict(env_prefix="RATE_LIMIT_")
+
+    limit_get: int = Field(
+        default=10,
+        alias="LIMIT_GET",
+        description="Max GET requests per TIME_GET"
+    )
+    limit_ppd: int = Field(
+        default=5,
+        alias="LIMIT_PPD",
+        description="Max PATCH/POST/DELETE requests per TIME_PPD"
+    )
+    time_get: int = Field(
+        default=60,
+        alias="TIME_GET",
+        description="Time window for GET requests in seconds"
+    )
+    time_ppd: int = Field(
+        default=60,
+        alias="TIME_PPD",
+        description="Time window for PATCH/POST/DELETE requests in seconds"
+    )
+    rate_limit_enabled: bool = Field(
+        default=True,
+        alias="RATE_LIMIT_ENABLED",
+        description="Enable or disable request limiting"
+    )
+
+
 class Settings(BaseSettings):
     """
     Root application settings.
@@ -125,7 +170,9 @@ class Settings(BaseSettings):
     )
 
     jwt: JWTSettings = JWTSettings()
+    redis: RedisSettings = RedisSettings()
     postgres: DatabaseSettings = DatabaseSettings()
+    rate_limit: RateLimitSettings = RateLimitSettings()
     pagination: PaginationSettings = PaginationSettings()
     http_client: HTTPClientSettings = HTTPClientSettings()
 

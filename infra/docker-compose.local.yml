@@ -40,6 +40,14 @@ services:
       retries: 5
       start_period: 5s
 
+  redis:
+    image: redis:7-alpine
+    container_name: service-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - micro-service-back-tier
+
   nginx:
     image: nginx:alpine
     container_name: service-nginx
