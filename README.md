@@ -16,7 +16,6 @@ A production-ready FastAPI microservice template with comprehensive features for
 - [Security](#-security)
 - [Extending the Application](#-extending-the-application)
 - [Contributing](#-contributing)
-- [License](#-license)
 - [Support](#-support)
 - [Acknowledgments](#-acknowledgments)
 
@@ -256,25 +255,7 @@ uv sync
 
 Create a `.env` file in the root directory:
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-POSTGRES_DB=dbname
-
-# Redis
-REDIS_URL=redis://localhost:6379/0
-
-# JWT
-JWT_SECRET_KEY=your-secret-key-here
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-
-# Application
-DEBUG=true
-ENVIRONMENT=development
-API_VERSION=v1
+cp infra/.env-example infra/.env
 ```
 
 4. **Start PostgreSQL and Redis:**
@@ -341,39 +322,6 @@ alembic revision --autogenerate -m "description of changes"
 # Create empty migration
 alembic revision -m "description of changes"
 ```
-
-## 🧪 Testing
-
-The project includes comprehensive unit and integration tests.
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test TEST_ARGS="--cov=src --cov-report=html"
-
-# Run specific test file
-make test TEST_ARGS="tests/unit/test_users_service.py"
-
-# Run specific test
-make test TEST_ARGS="tests/unit/test_users_service.py::TestUserService::test_create_user"
-
-# Run with verbose output
-make test TEST_ARGS="-v"
-
-# Run integration tests only
-make test TEST_ARGS="tests/integration/"
-```
-
-### Test Structure
-
-- **Unit Tests** (`tests/unit/`): Test individual components in isolation
-- **Integration Tests** (`tests/integration/`): Test API endpoints and full request/response cycle
-- **Factories** (`tests/factories/`): Generate test data using factory pattern
-- **Base Test Classes**: Reusable test utilities and fixtures
 
 ## 🛠️ Development Commands
 
@@ -549,67 +497,6 @@ JWT_SECRET_KEY=your-secret-key-here
 # Monitor and log security events
 ```
 
-## 🔧 Extending the Application
-
-### Adding a New Resource
-
-1. **Create Model** (`src/models/`)
-```python
-from src.db.postgres.mixins import TimestampMixin, PKMixin
-
-class Product(PKMixin, TimestampMixin):
-    __tablename__ = "products"
-    name = Column(String, nullable=False)
-    price = Column(Numeric, nullable=False)
-```
-
-2. **Create Schemas** (`src/schemas/`)
-```python
-from pydantic import BaseModel
-
-class ProductCreate(BaseModel):
-    name: str
-    price: float
-
-class ProductResponse(ProductCreate):
-    id: int
-```
-
-3. **Create Repository** (`src/repositories/`)
-```python
-from src.repositories.base import BaseRepository
-
-class ProductRepository(BaseRepository[Product]):
-    pass
-```
-
-4. **Create Service** (`src/services/`)
-```python
-from src.services.base import BaseService
-
-class ProductService(BaseService):
-    def __init__(self, repository: ProductRepository):
-        super().__init__(repository)
-```
-
-5. **Create API Routes** (`src/api/`)
-```python
-from fastapi import APIRouter
-
-router = APIRouter(prefix="/products", tags=["products"])
-
-@router.get("/")
-async def list_products():
-    # Implementation
-    pass
-```
-
-6. **Create Migration**
-```bash
-make revision
-# Enter: "add products table"
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these guidelines:
@@ -631,34 +518,6 @@ Contributions are welcome! Please follow these guidelines:
 - Write docstrings for public functions
 - Keep functions small and focused
 - Write tests for new features
-
-## 📝 License
-
-This project is licensed under the MIT License - see below for details:
-
-```
-MIT License
-
-Copyright (c) 2025 [Your Name/Organization]
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
 
 ## 📞 Support
 
