@@ -212,7 +212,7 @@ fastapi-microservice/
 
 1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone git@github.com:ummataliyev/fastapi-microservice.git
 cd fastapi-microservice
 ```
 
@@ -241,17 +241,11 @@ make upgrade
 
 1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone git@github.com:ummataliyev/fastapi-microservice.git
 cd fastapi-microservice
 ```
 
 2. **Install dependencies:**
-
-Using Poetry:
-```bash
-poetry install
-poetry shell
-```
 
 Using UV:
 ```bash
