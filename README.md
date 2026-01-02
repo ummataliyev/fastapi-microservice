@@ -4,17 +4,21 @@ A production-ready FastAPI microservice template with comprehensive features for
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Database Migrations](#database-migrations)
-- [Testing](#testing)
-- [Development Commands](#development-commands)
-- [API Documentation](#api-documentation)
-- [Architecture](#architecture)
-- [Security](#security)
-- [Contributing](#contributing)
+- [Features](#-features)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Configuration](#️-configuration)
+- [Database Migrations](#️-database-migrations)
+- [Testing](#-testing)
+- [Development Commands](#️-development-commands)
+- [API Documentation](#-api-documentation)
+- [Architecture](#️-architecture)
+- [Security](#-security)
+- [Extending the Application](#-extending-the-application)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
+- [Acknowledgments](#-acknowledgments)
 
 ## ✨ Features
 
