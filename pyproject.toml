@@ -34,4 +34,5 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "tenacity>=9.1.2",
     "uvicorn>=0.35.0",
+    "websockets>=15.0.1",
 ]

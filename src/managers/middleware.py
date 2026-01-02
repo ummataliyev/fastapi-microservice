@@ -1,5 +1,5 @@
 """
-Middleware configuration for the FastAPI application.
+Middleware manager for the FastAPI application.
 """
 from fastapi import FastAPI
 
