@@ -5,8 +5,10 @@ Base Service methods.
 from math import ceil
 
 from typing import List
+from typing import Union
 from typing import TypeVar
 
+from src.managers.readonly import ReadonlyManager
 from src.managers.transaction import TransactionManager
 
 from src.schemas.pagination import PaginationMetaScheme
@@ -28,7 +30,10 @@ class BaseService:
     database repositories and shared response utilities.
     """
 
-    def __init__(self, db: TransactionManager | None = None) -> None:
+    def __init__(
+            self,
+            db: Union[TransactionManager, ReadonlyManager, None] = None,
+    ) -> None:
         """
         Initialize the service with an optional database transaction manager.
 
@@ -38,7 +43,7 @@ class BaseService:
         self._db = db
 
     @property
-    def db(self) -> TransactionManager:
+    def db(self) -> Union[TransactionManager, ReadonlyManager]:
         """
         Get the active database transaction manager.
 

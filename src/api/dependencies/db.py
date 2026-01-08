@@ -7,6 +7,9 @@ from typing import Annotated
 from fastapi import Depends
 
 from src.db.postgres.database import async_session
+from src.db.postgres.database import async_session_null_pool
+
+from src.managers.readonly import ReadonlyManager
 from src.managers.transaction import TransactionManager
 
 
@@ -28,7 +31,27 @@ async def get_db_transaction():
         yield transaction
 
 
+async def get_db_readonly():
+    """
+    Provides a read-only database session.
+
+    Characteristics:
+    - no transaction
+    - no commit / rollback
+    - NullPool (no connection reuse)
+    - safe for concurrent read-only usage
+    """
+
+    async with async_session_null_pool() as session:
+        yield ReadonlyManager(session)
+
+
 DbTransactionDep = Annotated[
     TransactionManager,
     Depends(get_db_transaction),
+]
+
+DbReadonlySessionDep = Annotated[
+    ReadonlyManager,
+    Depends(get_db_readonly),
 ]
