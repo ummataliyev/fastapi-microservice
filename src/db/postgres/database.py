@@ -1,5 +1,5 @@
 """
-Database Base models configuration for PostgreSQL.
+Async SQLAlchemy engine/session and Base for template layout
 """
 
 import re
@@ -11,27 +11,32 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from src.core.config import settings
+from src.core.settings import settings
 
-
-async_engine = create_async_engine(
-    url=settings.postgres.url,
+engine = create_async_engine(
+    settings.postgres.url,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=3600,
+    pool_pre_ping=True,
 )
 
-async_engine_null_pull = create_async_engine(
-    url=settings.postgres.url,
+engine_readonly = create_async_engine(
+    settings.postgres.url,
     poolclass=NullPool,
 )
 
-async_session = async_sessionmaker(
-    async_engine,
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
     expire_on_commit=False,
 )
 
-async_session_null_pool = async_sessionmaker(
-    async_engine_null_pull,
+AsyncSessionReadonly = async_sessionmaker(
+    bind=engine_readonly,
     expire_on_commit=False,
 )
+
 inflect_engine = inflect.engine()
 
 
@@ -47,5 +52,17 @@ class Base(DeclarativeBase):
     @declared_attr.directive
     @classmethod
     def __tablename__(cls) -> str:
-        name = re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
+        """
+        Generate table name for the model.
+
+        Converts the class name from CamelCase to snake_case
+        and pluralizes it using the `inflect` library.
+
+        :return: str - Pluralized snake_case table name.
+        """
+        name = re.sub(
+            r"(?<!^)(?=[A-Z])",
+            "_",
+            cls.__name__,
+        ).lower()
         return inflect_engine.plural(name)
