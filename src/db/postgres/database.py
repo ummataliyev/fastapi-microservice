@@ -5,7 +5,6 @@ Async SQLAlchemy engine/session and Base for template layout
 import re
 import inflect
 
-from sqlalchemy import NullPool
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -24,7 +23,11 @@ engine = create_async_engine(
 
 engine_readonly = create_async_engine(
     settings.postgres.url,
-    poolclass=NullPool,
+    pool_size=5,
+    max_overflow=0,
+    pool_timeout=30,
+    pool_recycle=3600,
+    pool_pre_ping=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(

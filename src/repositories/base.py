@@ -2,8 +2,7 @@
 Base Repository methods.
 """
 
-import uuid
-
+from typing import Any
 from typing import TypeVar
 from typing import Generic
 from typing import Iterable
@@ -239,11 +238,11 @@ class BaseRepository(Generic[T]):
             raise ObjectNotFoundRepoException
         return self.mapper.map_to_domain_entity(model)
 
-    async def delete_bulk(self, list_ids: list[uuid.UUID]) -> int:
+    async def delete_bulk(self, list_ids: list[Any]) -> int:
         """
         Soft-delete multiple objects by setting `deleted_at`.
 
-        :param list_ids: List of UUIDs to delete.
+        :param list_ids: List of IDs to delete.
         :return: Number of deleted rows.
         """
 
@@ -278,11 +277,11 @@ class BaseRepository(Generic[T]):
             raise ObjectNotFoundRepoException
         return self.mapper.map_to_domain_entity(model)
 
-    async def restore_bulk(self, list_ids: list[uuid.UUID]) -> int:
+    async def restore_bulk(self, list_ids: list[Any]) -> int:
         """
         Restore multiple soft-deleted objects by setting `deleted_at=NULL`.
 
-        :param filter_by: Field-based filters.
+        :param list_ids: List of IDs to restore.
         :return: Number of restored rows.
         """
 
@@ -297,13 +296,14 @@ class BaseRepository(Generic[T]):
 
     async def count(self, filters: dict | None = None) -> int:
         """
-        Count records in the table with optional filters.
+        Count active (non-deleted) records in the table with optional filters.
 
         :param filters: Optional dictionary of field-value filters.
         :return: Number of matching records.
         """
 
         stmt = select(func.count()).select_from(self.model)
+        stmt = self._active_filter(stmt)
 
         if filters:
             for field, value in filters.items():

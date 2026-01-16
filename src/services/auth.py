@@ -7,6 +7,7 @@ from src.services.base import BaseService
 from src.schemas.auth import LoginSchema
 from src.schemas.users import UserReadSchema
 from src.schemas.users import UserCreateSchema
+from src.schemas.users import UserInternalSchema
 from src.schemas.auth import TokenResponseSchema
 
 from src.exceptions.service.auth import InvalidToken
@@ -141,12 +142,12 @@ class AuthService(BaseService):
 
         return user
 
-    def _generate_tokens(self, user: UserReadSchema) -> TokenResponseSchema:
+    def _generate_tokens(self, user: UserInternalSchema) -> TokenResponseSchema:
         """
         Generate access and refresh tokens for a user.
 
-        :param user: UserReadSchema object representing the user.
-        :type user: UserReadSchema
+        :param user: UserInternalSchema object representing the user.
+        :type user: UserInternalSchema
         :return: TokenResponseSchema containing access and refresh tokens.
         :rtype: TokenResponseSchema
         """

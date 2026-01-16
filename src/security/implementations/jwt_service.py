@@ -9,6 +9,7 @@ from typing import Dict
 
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 
 from jwt import ExpiredSignatureError
 from jwt import InvalidTokenError as PyJWTInvalidTokenError
@@ -73,7 +74,7 @@ class JWTTokenService(TokenService):
         :param data: Dictionary of claims to include in the token.
         :return: Encoded JWT access token as a string.
         """
-        exp = datetime.utcnow() + timedelta(minutes=self.access_exp_minutes)
+        exp = datetime.now(timezone.utc) + timedelta(minutes=self.access_exp_minutes)
         return self._encode(data, exp, "access")
 
     def create_refresh_token(self, data: Dict[str, Any]) -> str:
@@ -83,7 +84,7 @@ class JWTTokenService(TokenService):
         :param data: Dictionary of claims to include in the token.
         :return: Encoded JWT refresh token as a string.
         """
-        exp = datetime.utcnow() + timedelta(days=self.refresh_exp_days)
+        exp = datetime.now(timezone.utc) + timedelta(days=self.refresh_exp_days)
         return self._encode(data, exp, "refresh")
 
     def decode(self, token: str) -> Dict[str, Any]:

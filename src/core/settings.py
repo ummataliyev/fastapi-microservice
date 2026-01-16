@@ -20,6 +20,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    debug: bool = False
+    tracing_enabled: bool = True
+
     jwt: JWTSettings = JWTSettings()
     redis: RedisSettings = RedisSettings()
     postgres: DatabaseSettings = DatabaseSettings()
