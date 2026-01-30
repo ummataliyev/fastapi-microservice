@@ -72,7 +72,10 @@ class AuthManager:
         payload = {"sub": str(user.id), "email": user.email}
         access_token = self.token_service.create_access_token(payload)
         refresh_token = self.token_service.create_refresh_token(payload)
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
 
     async def get_current_user(self, token: str) -> Users:
         """
