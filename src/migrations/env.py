@@ -11,13 +11,36 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from src.core.config import settings
-from src.db.postgres.database import Base
+from src.core.settings import settings
+from src.db.sqlalchemy import Base
+from src.models.users import Users  # noqa: F401
 
 
 config = context.config
 
-config.set_main_option("sqlalchemy.url", settings.postgres.build_url())
+
+def _resolve_sqlalchemy_url() -> str:
+    """
+     resolve sqlalchemy url.
+
+    :return: TODO - describe return value.
+    :rtype: str
+    :raises RuntimeError: If the operation cannot be completed.
+    """
+    provider = settings.db_provider.lower()
+    if provider == "postgres":
+        return settings.postgres.build_url()
+    if provider == "mysql":
+        return settings.mysql.url
+    if provider == "mongo":
+        raise RuntimeError(
+            "Alembic migrations are not supported for DB_PROVIDER=mongo. "
+            "Use a Mongo migration strategy (e.g., mongock/custom scripts)."
+        )
+    raise RuntimeError(f"Unsupported DB provider for migrations: {provider}")
+
+
+config.set_main_option("sqlalchemy.url", _resolve_sqlalchemy_url())
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -55,7 +78,7 @@ async def run_migrations_online() -> None:
     Run migrations in 'online' mode using async engine.
     """
     connectable = create_async_engine(
-        settings.postgres.build_url(),
+        _resolve_sqlalchemy_url(),
         poolclass=pool.NullPool,
     )
 

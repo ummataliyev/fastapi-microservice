@@ -12,9 +12,32 @@ class BaseRepoException(Exception):
     """
 
     message = "Repository operation failed"
+    error_code = "REPOSITORY_ERROR"
 
-    def __init__(self, message: str | None = None):
-        super().__init__(message or self.message)
+    def __init__(self, message: str | None = None, details: dict | None = None):
+        """
+          init  .
+
+        :param message: TODO - describe message.
+        :type message: str | None
+        :param details: TODO - describe details.
+        :type details: dict | None
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
+        self.message = message or self.message
+        self.details = details
+        super().__init__(self.message)
+
+    def __str__(self) -> str:
+        """
+          str  .
+
+        :return: TODO - describe return value.
+        :rtype: str
+        :raises Exception: If the operation fails.
+        """
+        return self.message
 
 
 class ObjectNotFoundRepoException(BaseRepoException):
@@ -23,6 +46,7 @@ class ObjectNotFoundRepoException(BaseRepoException):
     """
 
     message = "Object not found in repository"
+    error_code = "REPOSITORY_OBJECT_NOT_FOUND"
 
 
 class CannotAddObjectRepoException(BaseRepoException):
@@ -32,6 +56,7 @@ class CannotAddObjectRepoException(BaseRepoException):
     """
 
     message = "Cannot add object to repository"
+    error_code = "REPOSITORY_CANNOT_ADD"
 
 
 class CannotUpdateObjectRepoException(BaseRepoException):
@@ -40,6 +65,7 @@ class CannotUpdateObjectRepoException(BaseRepoException):
     """
 
     message = "Cannot update object in repository"
+    error_code = "REPOSITORY_CANNOT_UPDATE"
 
 
 class CannotDeleteObjectRepoException(BaseRepoException):
@@ -48,6 +74,7 @@ class CannotDeleteObjectRepoException(BaseRepoException):
     """
 
     message = "Cannot delete object from repository"
+    error_code = "REPOSITORY_CANNOT_DELETE"
 
 
 class DatabaseConnectionRepoException(BaseRepoException):
@@ -56,3 +83,13 @@ class DatabaseConnectionRepoException(BaseRepoException):
     """
 
     message = "Database connection error"
+    error_code = "REPOSITORY_CONNECTION_ERROR"
+
+
+class InvalidRepositoryInputRepoException(BaseRepoException):
+    """
+    Raised when repository receives invalid query/input parameters.
+    """
+
+    message = "Invalid repository input"
+    error_code = "REPOSITORY_INVALID_INPUT"

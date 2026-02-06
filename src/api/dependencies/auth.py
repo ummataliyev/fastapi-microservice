@@ -4,9 +4,7 @@ FastAPI dependency for retrieving the current authenticated user.
 
 from typing import Annotated
 
-from fastapi import status
 from fastapi import Depends
-from fastapi import HTTPException
 from fastapi.security import HTTPBearer
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -17,8 +15,9 @@ from src.schemas.users import UserReadSchema
 from src.api.dependencies.db import DbTransactionDep
 
 from src.exceptions.service.auth import InvalidToken
-from src.exceptions.service.auth import InvalidTokenType
 from src.exceptions.service.users import UserNotFound
+from src.exceptions.service.auth import InvalidTokenType
+from src.exceptions.api.auth import InvalidTokenHTTPException
 
 
 security = HTTPBearer()
@@ -34,7 +33,7 @@ async def get_current_user(
     :param db: Database transaction dependency for repository access.
     :param credentials: HTTP Bearer credentials containing the JWT token.
     :return: UserReadSchema instance representing the current user.
-    :raises HTTPException: 401 if token is invalid, wrong type, or user not found.
+    :raises InvalidTokenHTTPException: 401 if token is invalid, wrong type, or user not found.
     """
     token = credentials.credentials
 
@@ -43,11 +42,11 @@ async def get_current_user(
         user = await auth_manager.get_current_user(token)
         return user
     except (InvalidToken, InvalidTokenType, UserNotFound) as ex:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise InvalidTokenHTTPException(
             detail=str(ex),
+            error_code="AUTH_INVALID_TOKEN",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from ex
 
 
 CurrentUserDep = Annotated[

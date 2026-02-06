@@ -1,6 +1,5 @@
 """
 AuthManager: handles authentication, JWT creation/verification,
-and password hashing using repositories from TransactionManager.
 """
 
 from typing import Optional
@@ -13,6 +12,7 @@ from src.exceptions.service.auth import InvalidToken
 from src.exceptions.service.users import UserNotFound
 from src.exceptions.service.auth import InvalidTokenType
 
+from src.security.exceptions.token import TokenError
 from src.security.implementations.jwt_service import JWTTokenService
 from src.security.implementations.bcrypt_hasher import BcryptPasswordHasher
 
@@ -72,7 +72,10 @@ class AuthManager:
         payload = {"sub": str(user.id), "email": user.email}
         access_token = self.token_service.create_access_token(payload)
         refresh_token = self.token_service.create_refresh_token(payload)
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
 
     async def get_current_user(self, token: str) -> Users:
         """
@@ -86,7 +89,7 @@ class AuthManager:
         """
         try:
             payload = self.token_service.decode(token)
-        except Exception as ex:
+        except TokenError as ex:
             raise InvalidToken(str(ex))
 
         token_type = payload.get("type")

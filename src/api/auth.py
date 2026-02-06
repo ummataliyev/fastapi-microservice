@@ -2,11 +2,8 @@
 Authentication API endpoints.
 """
 
-from fastapi import status
 from fastapi import Request
 from fastapi import APIRouter
-from fastapi import HTTPException
-
 
 from src.services.auth import AuthService
 
@@ -26,6 +23,13 @@ from src.exceptions.service.users import UserNotFound
 from src.exceptions.service.auth import InvalidTokenType
 from src.exceptions.service.auth import InvalidCredentials
 from src.exceptions.service.users import UserAlreadyExists
+from src.exceptions.service.auth import LoginTemporarilyLocked
+
+from src.exceptions.api.auth import InvalidTokenHTTPException
+from src.exceptions.api.auth import AuthUserNotFoundHTTPException
+from src.exceptions.api.auth import InvalidCredentialsHTTPException
+from src.exceptions.api.users import UserAlreadyExistsHTTPException
+from src.exceptions.api.auth import LoginTemporarilyLockedHTTPException
 
 
 router = APIRouter(
@@ -37,7 +41,7 @@ router = APIRouter(
 @router.post(
     "/register",
     response_model=TokenResponseSchema,
-    status_code=status.HTTP_201_CREATED,
+    status_code=201,
     summary="Register a new user",
     description=("Creates a new user account and returns access and refresh tokens") # noqa
 )
@@ -58,10 +62,10 @@ async def register(
         tokens = await AuthService(db).register(data)
         return tokens
     except UserAlreadyExists as ex:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ex)
-        )
+        raise UserAlreadyExistsHTTPException(
+            detail=str(ex),
+            details=getattr(ex, "details", None),
+        ) from ex
 
 
 @router.post(
@@ -84,13 +88,20 @@ async def login(
     :return: Access and refresh tokens for the authenticated user.
     """
     try:
-        tokens = await AuthService(db).login(credentials)
+        client_ip = request.client.host if request.client else "unknown"
+        tokens = await AuthService(db).login(credentials, client_ip=client_ip)
         return tokens
     except InvalidCredentials as ex:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(ex)
-        )
+        raise InvalidCredentialsHTTPException(
+            detail=str(ex),
+            details=getattr(ex, "details", None),
+        ) from ex
+    except LoginTemporarilyLocked as ex:
+        raise LoginTemporarilyLockedHTTPException(
+            detail=str(ex),
+            details={"retry_after_seconds": ex.retry_after_seconds},
+            headers={"Retry-After": str(ex.retry_after_seconds)},
+        ) from ex
 
 
 @router.post(
@@ -116,15 +127,15 @@ async def refresh_token(
         tokens = await AuthService(db).refresh_access_token(data.refresh_token)
         return tokens
     except (InvalidToken, InvalidTokenType) as ex:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(ex)
-        )
+        raise InvalidTokenHTTPException(
+            detail=str(ex),
+            details=getattr(ex, "details", None),
+        ) from ex
     except UserNotFound as ex:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(ex)
-        )
+        raise AuthUserNotFoundHTTPException(
+            detail=str(ex),
+            details=getattr(ex, "details", None),
+        ) from ex
 
 
 @router.get(

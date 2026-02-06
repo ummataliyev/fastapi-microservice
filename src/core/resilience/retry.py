@@ -29,6 +29,22 @@ class AsyncHTTPRetry:
         max_wait: float = 5,
         retry_exceptions: tuple[type[Exception], ...] | None = None,
     ):
+        """
+          init  .
+
+        :param attempts: TODO - describe attempts.
+        :type attempts: int
+        :param multiplier: TODO - describe multiplier.
+        :type multiplier: float
+        :param min_wait: TODO - describe min_wait.
+        :type min_wait: float
+        :param max_wait: TODO - describe max_wait.
+        :type max_wait: float
+        :param retry_exceptions: TODO - describe retry_exceptions.
+        :type retry_exceptions: tuple[type[Exception], ...] | None
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         self.attempts = attempts
         self.multiplier = multiplier
         self.min_wait = min_wait

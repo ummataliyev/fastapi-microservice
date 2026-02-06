@@ -10,5 +10,11 @@ from src.schemas.users import UserInternalSchema
 
 
 class UsersMapper(BaseDataMapper):
+    """
+    UsersMapper class.
+
+    :raises Exception: If class initialization or usage fails.
+    """
+
     model = Users
     schema = UserInternalSchema

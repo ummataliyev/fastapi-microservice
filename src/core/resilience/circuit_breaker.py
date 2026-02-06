@@ -18,6 +18,16 @@ class CircuitBreakerFactory:
         fail_max: int = 5,
         reset_timeout: int = 30,
     ):
+        """
+          init  .
+
+        :param fail_max: TODO - describe fail_max.
+        :type fail_max: int
+        :param reset_timeout: TODO - describe reset_timeout.
+        :type reset_timeout: int
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         self.fail_max = fail_max
         self.reset_timeout = reset_timeout
         self._breakers: dict[str, pybreaker.CircuitBreaker] = {}

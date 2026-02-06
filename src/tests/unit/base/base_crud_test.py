@@ -1,3 +1,6 @@
+"""
+Unit tests for base crud test.
+"""
 import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, AsyncMock
@@ -22,10 +25,25 @@ class ServiceTestBase:
     default_read_payload: dict = {}
 
     def setup_method(self):
+        """
+        Setup method.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         self.mock_db = MagicMock()
         self.service = self.service_cls(db=self.mock_db)
 
     def _make_read_instance(self, fake_id: Optional[int] = None) -> Any:
+        """
+         make read instance.
+
+        :param fake_id: TODO - describe fake_id.
+        :type fake_id: Optional[int]
+        :return: TODO - describe return value.
+        :rtype: Any
+        :raises Exception: If the operation fails.
+        """
         if fake_id is None:
             fake_id = 1
         payload = dict(self.default_read_payload)
@@ -39,6 +57,12 @@ class ServiceTestBase:
         return mock
 
     async def test_create_success(self):
+        """
+        Test create success.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         repo = getattr(self.mock_db, self.repo_attr)
         read_instance = self._make_read_instance()
         repo.add = AsyncMock(return_value=read_instance)
@@ -56,6 +80,12 @@ class ServiceTestBase:
         assert result.id == read_instance.id
 
     async def test_get_one_by_id_success(self):
+        """
+        Test get one by id success.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         fake_id = 1
         repo = getattr(self.mock_db, self.repo_attr)
         repo.get_one = AsyncMock(return_value=self._make_read_instance(fake_id))
@@ -64,6 +94,12 @@ class ServiceTestBase:
         assert result.id == fake_id
 
     async def test_get_one_by_id_not_found(self):
+        """
+        Test get one by id not found.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         fake_id = 1
         repo = getattr(self.mock_db, self.repo_attr)
         repo.get_one = AsyncMock(side_effect=ObjectNotFoundRepoException())
@@ -71,6 +107,12 @@ class ServiceTestBase:
             await self.service.get_one_by_id(fake_id)
 
     async def test_update_success(self):
+        """
+        Test update success.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         fake_id = 1
         repo = getattr(self.mock_db, self.repo_attr)
         read_instance = self._make_read_instance(fake_id)
@@ -91,6 +133,12 @@ class ServiceTestBase:
         assert result.id == fake_id
 
     async def test_delete_success(self):
+        """
+        Test delete success.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
         fake_id = 1
         repo = getattr(self.mock_db, self.repo_attr)
         repo.delete_one = AsyncMock(return_value=MagicMock(id=fake_id))

@@ -8,8 +8,8 @@ from typing import List
 from typing import Union
 from typing import TypeVar
 
-from src.managers.readonly import ReadonlyManager
-from src.managers.transaction import TransactionManager
+from src.managers.base import BaseAsyncManager
+from src.managers.base import BaseTransactionManager
 
 from src.schemas.pagination import PaginationMetaScheme
 from src.schemas.pagination import PaginatedResponseSchema
@@ -32,7 +32,7 @@ class BaseService:
 
     def __init__(
             self,
-            db: Union[TransactionManager, ReadonlyManager, None] = None,
+            db: Union[BaseTransactionManager, BaseAsyncManager, None] = None,
     ) -> None:
         """
         Initialize the service with an optional database transaction manager.
@@ -43,7 +43,7 @@ class BaseService:
         self._db = db
 
     @property
-    def db(self) -> Union[TransactionManager, ReadonlyManager]:
+    def db(self) -> Union[BaseTransactionManager, BaseAsyncManager]:
         """
         Get the active database transaction manager.
 
@@ -85,7 +85,12 @@ class BaseService:
         :rtype: PaginatedResponseSchema[T]
         """
 
-        total_pages = ceil(total_items / per_page) if per_page > 0 else 0
+        if per_page <= 0:
+            raise ValueError("per_page must be greater than 0")
+        if current_page <= 0:
+            raise ValueError("current_page must be greater than 0")
+
+        total_pages = ceil(total_items / per_page)
         return PaginatedResponseSchema[T](
             status="success",
             message=message,
@@ -94,7 +99,7 @@ class BaseService:
                 current_page=current_page,
                 total_items=total_items,
                 has_next_page=current_page < total_pages,
-                has_previous_page=current_page > 1,
+                has_previous_page=total_pages > 0 and current_page > 1,
             ),
             data=items,
         )

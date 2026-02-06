@@ -5,6 +5,8 @@ CORS middleware configuration for FastAPI application.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.core.settings import settings
+
 
 class CORSMiddlewareConfigurator:
     """
@@ -16,19 +18,14 @@ class CORSMiddlewareConfigurator:
     - Sets common headers, methods, and max-age
     """
 
-    def __init__(
-        self,
-        allow_all_in_dev: bool = True,
-        allowed_origins: list[str] | None = None,
-    ):
+    def __init__(self, allowed_origins: list[str] | None = None):
         """
         Initialize the CORS configurator.
 
         :param allow_all_in_dev: If True, all origins are allowed (useful for dev)
         :param allowed_origins: List of allowed origins (used if not allowing all)
         """
-        self.allow_all_in_dev = allow_all_in_dev
-        self.allowed_origins = allowed_origins or ["*"]
+        self.allowed_origins = allowed_origins or settings.allowed_origins
 
     def configure(self, app: FastAPI) -> None:
         """
@@ -37,11 +34,9 @@ class CORSMiddlewareConfigurator:
         :param app: FastAPI application instance
         :return: None
         """
-        origins = ["*"] if self.allow_all_in_dev else self.allowed_origins
-
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=origins,
+            allow_origins=self.allowed_origins,
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["Authorization", "Content-Type", "X-Requested-With"],

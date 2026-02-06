@@ -1,17 +1,15 @@
 """
 Base async transaction manager utilities.
-
-Defines the abstract interface for async transaction managers.
 """
 
 from abc import ABC
 from abc import abstractmethod
 
+from typing import Self
+from typing import Any
 from typing import TypeVar
 from typing import Optional
 from types import TracebackType
-
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 T = TypeVar("T")
@@ -24,10 +22,10 @@ class BaseAsyncManager(ABC):
     Enforces async context management and session lifecycle handling.
     """
 
-    session: AsyncSession
+    session: Any
 
     @abstractmethod
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         """
         Enter the async context manager.
 
@@ -40,7 +38,7 @@ class BaseAsyncManager(ABC):
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """
         Exit the async context manager.
 
@@ -59,9 +57,17 @@ class BaseTransactionManager(BaseAsyncManager):
     """
 
     @abstractmethod
-    async def commit(self):
+    async def commit(self) -> None:
         """
         Commit the current session transaction.
+
+        :return: None
+        """
+
+    @abstractmethod
+    async def rollback(self) -> None:
+        """
+        Rollback the current session transaction.
 
         :return: None
         """

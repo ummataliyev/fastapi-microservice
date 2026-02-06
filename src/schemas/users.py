@@ -15,8 +15,15 @@ class BaseUserSchema(BaseModel):
     Shared fields for creating and updating users.
     """
 
-    email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., min_length=8, description="User password (min 8 characters)")
+    email: EmailStr = Field(
+        ...,
+        description="User email address"
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        description="User password (min 8 characters)"
+    )
 
 
 class UserCreateSchema(BaseUserSchema):
@@ -28,8 +35,21 @@ class UserCreateSchema(BaseUserSchema):
 
 
 class UserUpdateSchema(BaseModel):
-    email: EmailStr | None = Field(None, description="User email address")
-    password: str | None = Field(None, min_length=8, description="User password (min 8 characters)")
+    """
+    UserUpdateSchema class.
+
+    :raises Exception: If class initialization or usage fails.
+    """
+
+    email: EmailStr | None = Field(
+        None,
+        description="User email address"
+    )
+    password: str | None = Field(
+        None,
+        min_length=8,
+        description="User password (min 8 characters)"
+    )
 
 
 class UserReadSchema(UUIDSchema, TimestampSchema, BaseModel):
@@ -41,6 +61,10 @@ class UserReadSchema(UUIDSchema, TimestampSchema, BaseModel):
     email: EmailStr = Field(..., description="User email address")
 
     class Config:
+        """
+        Config class.
+        :raises Exception: If class initialization or usage fails.
+        """
         from_attributes = True
 
 

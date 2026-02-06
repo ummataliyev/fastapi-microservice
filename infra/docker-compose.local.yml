@@ -1,18 +1,25 @@
-version: '3.9'
-
 services:
   api:
     build:
       context: ../
       dockerfile: infra/Dockerfile
+      target: dev
     container_name: service-api
     command: ./infra/commands/api.sh
     env_file:
       - .env
+    environment:
+      DB_PROVIDER: ${DB_PROVIDER:-postgres}
+      POSTGRES_HOST: db
+      MYSQL_HOST: mysql
+      MONGO_HOST: mongo
+      REDIS_HOST: redis
+      TRUSTED_HOSTS: "*"
     volumes:
       - ../:/app
     depends_on:
-      - db
+      redis:
+        condition: service_healthy
     networks:
       - micro-service-back-tier
     healthcheck:
@@ -39,6 +46,46 @@ services:
       timeout: 10s
       retries: 5
       start_period: 5s
+    profiles:
+      - postgres
+  mysql:
+    image: mysql:8.4
+    container_name: service-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DB:-micro-service}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - micro-service-back-tier
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    profiles:
+      - mysql
+
+  mongo:
+    image: mongo:7
+    container_name: service-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - micro-service-back-tier
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" localhost:27017/admin | grep 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    profiles:
+      - mongo
 
   redis:
     image: redis:7-alpine
@@ -47,6 +94,12 @@ services:
       - "6379:6379"
     networks:
       - micro-service-back-tier
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
 
   nginx:
     image: nginx:alpine
@@ -73,6 +126,8 @@ services:
 
 volumes:
   postgres_data:
+  mysql_data:
+  mongo_data:
 
 networks:
   micro-service-back-tier:

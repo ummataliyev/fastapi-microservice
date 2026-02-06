@@ -1,9 +1,9 @@
 """
 Pagination-related configuration.
-Defines settings for pagination behavior in the application.
 """
 
 from pydantic import Field
+
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 

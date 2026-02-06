@@ -33,7 +33,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.debug = debug
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response: # noqa
         """
         Process an incoming request and handle exceptions.
 
@@ -64,7 +64,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
 
         logger.warning(
             f"API exception | type={exc.__class__.__name__} "
-            f"message={exc.message} path={request.url.path} request_id={request_id}"
+            f"message={exc.message} path={request.url.path} request_id={request_id}" # noqa
         )
 
         error_response = {
@@ -78,7 +78,11 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         if self.debug and exc.details:
             error_response["error"]["details"] = exc.details
 
-        return JSONResponse(status_code=exc.status_code, content=error_response)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_response,
+            headers=exc.headers,
+        )
 
     async def _handle_validation_error(
         self, request: Request, exc: ValueError

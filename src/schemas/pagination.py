@@ -10,8 +10,9 @@ from typing import Annotated
 from fastapi import Query
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 
-from src.core.config import settings
+from src.core.settings import settings
 
 
 T = TypeVar("T")
@@ -39,6 +40,7 @@ class PaginationRequestSchema(BaseModel):
             description="Items per page",
         ),
     ]
+    model_config = ConfigDict(extra="forbid")
 
 
 class PaginationSchema(BaseModel):
@@ -56,6 +58,7 @@ class PaginationSchema(BaseModel):
     limit: int
     offset: int
     current_page: int
+    model_config = ConfigDict(extra="forbid")
 
 
 class PaginationMetaScheme(BaseModel):
@@ -75,6 +78,7 @@ class PaginationMetaScheme(BaseModel):
     total_items: int
     has_next_page: bool
     has_previous_page: bool
+    model_config = ConfigDict(extra="forbid")
 
 
 class PaginatedResponseSchema(BaseModel, Generic[T]):
@@ -92,3 +96,4 @@ class PaginatedResponseSchema(BaseModel, Generic[T]):
     message: str
     pagination: PaginationMetaScheme
     data: List[T]
+    model_config = ConfigDict(extra="forbid")

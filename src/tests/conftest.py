@@ -12,26 +12,51 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.main import app
-from src.db.postgres import Base
-from src.core.config import settings
+from src.db.sqlalchemy import Base
+from src.core.settings import settings
+from src.schemas.users import UserReadSchema
 from src.managers.transaction import TransactionManager
 from src.api.dependencies.db import get_db_transaction
+from src.api.dependencies.auth import get_current_user
 
 
-TEST_DB_NAME = f"{settings.postgres.name}_test"
+TEST_DB_NAME = f"{settings.postgres.db}_test"
+ACTIVE_PROVIDER = settings.db_provider.lower()
 
 
-@pytest.fixture
+def pytest_collection_modifyitems(config, items):
+    """
+    Pytest collection modifyitems.
+
+    :param config: TODO - describe config.
+    :param items: TODO - describe items.
+    :return: None.
+    :raises Exception: If the operation fails.
+    """
+    provider = ACTIVE_PROVIDER
+    supported_markers = {"postgres", "mysql", "mongo"}
+    for item in items:
+        item_markers = {marker.name for marker in item.iter_markers()}
+        selected = item_markers.intersection(supported_markers)
+        if selected and provider not in selected:
+            item.add_marker(
+                pytest.mark.skip(reason=f"Test provider marker {selected} does not match DB_PROVIDER={provider}") # noqa
+            )
+
+
+@pytest.fixture(scope="session")
 async def create_test_database():
     """
     Creates a temporary test database and provides an async engine and session factory for tests.
 
     :yield: Tuple of (AsyncEngine, async_sessionmaker) connected to the test database.
     """
-    TEST_DB_NAME = f"{settings.postgres.name}_test"
+    if ACTIVE_PROVIDER != "postgres":
+        pytest.skip("create_test_database fixture is currently implemented only for postgres provider")
+    TEST_DB_NAME = f"{settings.postgres.db}_test"
 
     default_engine = create_async_engine(
-        f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}"
+        f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}" # noqa
         f"@{settings.postgres.host}:{settings.postgres.port}/postgres",
         isolation_level="AUTOCOMMIT",
     )
@@ -41,18 +66,18 @@ async def create_test_database():
         await conn.execute(text(f'CREATE DATABASE "{TEST_DB_NAME}"'))
 
     test_async_engine = create_async_engine(
-        f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}"
+        f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}" # noqa
         f"@{settings.postgres.host}:{settings.postgres.port}/{TEST_DB_NAME}",
         echo=False,
     )
-    test_async_session = async_sessionmaker(test_async_engine, expire_on_commit=False)
+    test_async_session = async_sessionmaker(test_async_engine, expire_on_commit=False) # noqa
 
     try:
         yield test_async_engine, test_async_session
     finally:
         await test_async_engine.dispose()
         async with default_engine.begin() as conn:
-            await conn.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}"'))
+            await conn.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}"')) # noqa
         await default_engine.dispose()
 
 
@@ -102,11 +127,33 @@ async def override_get_db(create_test_database):
     _, session_factory = create_test_database
 
     async def _get_db():
-        async with TransactionManager(session_factory=session_factory) as transaction:
+        """
+         get db.
+
+        :return: None.
+        :raises Exception: If the operation fails.
+        """
+        async with TransactionManager(session_factory=session_factory) as transaction: # noqa
             yield transaction
             await transaction.rollback()
 
+    async def _get_current_user() -> UserReadSchema:
+        """
+         get current user.
+
+        :return: TODO - describe return value.
+        :rtype: UserReadSchema
+        :raises Exception: If the operation fails.
+        """
+        return UserReadSchema(
+            id=1,
+            email="test@example.com",
+            created_at="2025-01-01T00:00:00Z",
+            updated_at="2025-01-01T00:00:00Z",
+        )
+
     app.dependency_overrides[get_db_transaction] = _get_db
+    app.dependency_overrides[get_current_user] = _get_current_user
     yield
     app.dependency_overrides.clear()
 

@@ -32,7 +32,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.header_name = header_name
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response: # noqa
         """
         Process the incoming request and attach a unique request ID.
 
