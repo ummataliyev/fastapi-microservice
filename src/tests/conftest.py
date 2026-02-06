@@ -16,6 +16,7 @@ from src.main import app
 from src.db.sqlalchemy import Base
 from src.core.settings import settings
 from src.schemas.users import UserReadSchema
+from src.core.throttle.limiter import limiter
 from src.managers.transaction import TransactionManager
 from src.api.dependencies.db import get_db_transaction
 from src.api.dependencies.auth import get_current_user
@@ -43,6 +44,21 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(
                 pytest.mark.skip(reason=f"Test provider marker {selected} does not match DB_PROVIDER={provider}") # noqa
             )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_rate_limiter_for_tests():
+    """
+    Disable request throttling for deterministic test execution.
+
+    :return: None.
+    :raises Exception: If fixture setup or teardown fails.
+    """
+    previous = limiter.enabled
+    limiter.enabled = False
+    settings.rate_limit.rate_limit_enabled = False
+    yield
+    limiter.enabled = previous
 
 
 @pytest.fixture(scope="session")
