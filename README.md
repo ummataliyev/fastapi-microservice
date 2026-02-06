@@ -205,6 +205,27 @@ fastapi-microservice/
 
 ### Installation
 
+### Use As a Generator CLI
+
+Install the package, then use the admin command:
+
+```bash
+pip install fastapi-microservice
+fastapi-microservice-admin startproject my-service
+```
+
+This creates:
+
+```bash
+./my-service/
+```
+
+To choose a target folder:
+
+```bash
+fastapi-microservice-admin startproject my-service /path/to/projects
+```
+
 #### Option 1: Using Docker (Recommended)
 
 1. **Clone the repository:**
@@ -251,8 +272,13 @@ uv sync
 
 3. **Set up environment variables:**
 
-Create a `.env` file in the root directory:
-```env
+Create a local `.env` file in the project root:
+```bash
+cp .env.example .env
+```
+
+For Docker Compose, copy the infra file:
+```bash
 cp infra/.env-example infra/.env
 ```
 
@@ -275,17 +301,28 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 ## ⚙️ Configuration
 
-Configuration is managed through environment variables and the `src/core/config.py` and `src/core/settings.py` modules.
+Configuration is managed through environment variables and `src/core/settings.py`.
 
 ### Key Configuration Areas
 
-- **Database**: Connection string, pool size, echo mode
+- **App**: Name, environment, docs toggles, API prefix
+- **Database**: Connection details and pooling
 - **Redis**: Connection URL, key prefix
 - **JWT**: Secret key, algorithm, token expiration
-- **CORS**: Allowed origins, methods, headers
+- **CORS / Hosts**: Allowed origins and trusted host list
 - **Rate Limiting**: Request limits per endpoint
 - **Logging**: Log level, format, handlers
 - **Circuit Breaker**: Failure threshold, timeout, recovery
+- **Observability**: Metrics and tracing toggles
+
+### Important Environment Flags
+
+- `APP_ENV`: one of `development`, `dev`, `local`, `test`, `staging`, `production`, `prod`
+- `TRUSTED_HOSTS`: comma-separated hosts; `*` is allowed only in development/test environments
+- `RUN_MIGRATIONS_ON_START`: controls whether container startup runs `alembic upgrade head`
+- `AUTH_LOGIN_MAX_ATTEMPTS`: failed attempts before temporary lockout
+- `AUTH_LOGIN_WINDOW_SECONDS`: rolling window for counting failed login attempts
+- `AUTH_LOGIN_LOCKOUT_SECONDS`: lock duration after too many failed login attempts
 
 ## 🗄️ Database Migrations
 
@@ -333,6 +370,9 @@ make up              # Build and start all services
 make down            # Stop all services
 make restart         # Restart API container
 make build           # Build Docker images
+make buildx-create   # Prepare buildx builder
+make buildx-build    # Single-platform prod image build (--load)
+make buildx-push     # Multi-arch prod image build and push
 make clean           # Remove all containers & volumes
 
 # Database Operations
@@ -346,8 +386,11 @@ make logs            # Show container logs
 
 # Testing & Code Quality
 make test            # Run tests (use TEST_ARGS for pytest options)
+make test-local      # Run all tests locally
+make test-unit       # Run unit tests only
 make lint            # Run Ruff linter
 make format          # Auto-format code with Ruff
+make check           # Lint + unit tests
 
 # Help
 make                 # Show all available commands
@@ -358,8 +401,17 @@ make                 # Show all available commands
 **Start development environment:**
 ```bash
 make up
-make upgrade
 make logs
+```
+
+`make up` now runs a dedicated one-shot `migrate` service before API startup.
+
+**Build multi-architecture production image:**
+```bash
+make buildx-create
+make buildx-build IMAGE=ghcr.io/<org>/fastapi-microservice:latest PLATFORM=linux/amd64
+# or push directly
+make buildx-push IMAGE=ghcr.io/<org>/fastapi-microservice:latest
 ```
 
 **Create a new migration:**
@@ -396,6 +448,14 @@ Once the application is running, you can access the interactive API documentatio
   - Raw OpenAPI specification
   - Can be imported into tools like Postman
 
+- **Metrics**: http://localhost:8000/metrics
+  - Prometheus formatted service metrics
+
+- **Health Probes**
+  - Liveness: http://localhost:8000/live
+  - Readiness: http://localhost:8000/ready
+  - Health: http://localhost:8000/health
+
 ### Example API Endpoints
 
 ```
@@ -407,7 +467,11 @@ POST   /api/v1/users/           # Create user
 GET    /api/v1/users/{id}       # Get user by ID
 PUT    /api/v1/users/{id}       # Update user
 DELETE /api/v1/users/{id}       # Delete user
-WS     /ws                      # WebSocket connection
+WS     /api/v1/ws/chat/{room}    # WebSocket connection
+GET    /health                  # Basic health endpoint
+GET    /live                    # Liveness probe
+GET    /ready                   # Readiness probe (DB + Redis)
+GET    /metrics                 # Prometheus metrics
 ```
 
 ## 🏗️ Architecture
