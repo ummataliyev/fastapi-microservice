@@ -1,6 +1,5 @@
 """
 JWT configuration.
-Defines settings for JSON Web Tokens used in authentication.
 """
 
 import os
@@ -8,6 +7,7 @@ import warnings
 
 from pydantic import Field
 from pydantic import model_validator
+
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 

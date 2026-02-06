@@ -45,6 +45,15 @@ class ColorLogger:
         Custom logging formatter that applies colors to level name and message.
         """
         def format(self, record: logging.LogRecord) -> str:
+            """
+            Format.
+
+            :param record: TODO - describe record.
+            :type record: logging.LogRecord
+            :return: TODO - describe return value.
+            :rtype: str
+            :raises Exception: If the operation fails.
+            """
             color = ColorLogger.COLORS.get(record.levelname, ColorLogger.COLORS["RESET"])
             record.levelname = f"{color}{record.levelname}{ColorLogger.COLORS['RESET']}"
             record.msg = f"{color}{record.msg}{ColorLogger.COLORS['RESET']}"

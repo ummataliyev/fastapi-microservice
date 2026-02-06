@@ -1,9 +1,5 @@
-"""init
-
-Revision ID: 3fe16a2abf4d
-Revises:
-Create Date: 2025-10-26 17:47:19.216704
-
+"""
+init
 """
 
 from typing import Sequence, Union

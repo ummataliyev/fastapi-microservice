@@ -1,33 +1,29 @@
 """
-Async SQLAlchemy engine/session and Base for template layout
+Async SQLAlchemy engine/session for PostgreSQL.
 """
 
-import re
-import inflect
-
-from sqlalchemy.orm import declared_attr
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.core.settings import settings
+from src.db.sqlalchemy import Base
 
 engine = create_async_engine(
     settings.postgres.url,
-    pool_size=20,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=3600,
-    pool_pre_ping=True,
+    pool_size=settings.postgres.pool_size,
+    max_overflow=settings.postgres.max_overflow,
+    pool_timeout=settings.postgres.pool_timeout,
+    pool_recycle=settings.postgres.pool_recycle,
+    pool_pre_ping=settings.postgres.pool_pre_ping,
 )
 
 engine_readonly = create_async_engine(
     settings.postgres.url,
-    pool_size=5,
-    max_overflow=0,
-    pool_timeout=30,
-    pool_recycle=3600,
-    pool_pre_ping=True,
+    pool_size=settings.postgres.readonly_pool_size,
+    max_overflow=settings.postgres.readonly_max_overflow,
+    pool_timeout=settings.postgres.readonly_pool_timeout,
+    pool_recycle=settings.postgres.readonly_pool_recycle,
+    pool_pre_ping=settings.postgres.readonly_pool_pre_ping,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -39,33 +35,3 @@ AsyncSessionReadonly = async_sessionmaker(
     bind=engine_readonly,
     expire_on_commit=False,
 )
-
-inflect_engine = inflect.engine()
-
-
-class Base(DeclarativeBase):
-    """
-    Base class for all SQLAlchemy models with automatic table naming.
-
-    Converts CamelCase class names into plural snake_case table names.
-    All models inheriting from this base will automatically have
-    `__tablename__` set according to this convention.
-    """
-
-    @declared_attr.directive
-    @classmethod
-    def __tablename__(cls) -> str:
-        """
-        Generate table name for the model.
-
-        Converts the class name from CamelCase to snake_case
-        and pluralizes it using the `inflect` library.
-
-        :return: str - Pluralized snake_case table name.
-        """
-        name = re.sub(
-            r"(?<!^)(?=[A-Z])",
-            "_",
-            cls.__name__,
-        ).lower()
-        return inflect_engine.plural(name)

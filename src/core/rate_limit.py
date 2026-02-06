@@ -1,9 +1,9 @@
 """
 Rate limiting configuration settings.
-Defines limits for different HTTP methods and time windows.
 """
 
 from pydantic import Field
+
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
@@ -12,6 +12,7 @@ class RateLimitSettings(BaseSettings):
     """
     Rate limiting configuration for API endpoints.
     """
+
     model_config = SettingsConfigDict(env_prefix="RATE_LIMIT_")
 
     limit_get: int = Field(

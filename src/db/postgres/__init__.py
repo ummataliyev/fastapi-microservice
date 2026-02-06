@@ -1,12 +1,10 @@
 """
-Register models for PostgreSQL.
+PostgreSQL database package exports.
 """
 
 from src.db.postgres.database import Base
-from src.models.users import Users
 
 
 __all__ = [
     "Base",
-    "Users",
 ]
