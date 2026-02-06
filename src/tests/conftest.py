@@ -8,6 +8,7 @@ from httpx import AsyncClient
 from httpx import ASGITransport
 
 from sqlalchemy import text
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -59,6 +60,7 @@ async def create_test_database():
         f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}" # noqa
         f"@{settings.postgres.host}:{settings.postgres.port}/postgres",
         isolation_level="AUTOCOMMIT",
+        poolclass=NullPool,
     )
 
     async with default_engine.begin() as conn:
@@ -69,6 +71,7 @@ async def create_test_database():
         f"postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}" # noqa
         f"@{settings.postgres.host}:{settings.postgres.port}/{TEST_DB_NAME}",
         echo=False,
+        poolclass=NullPool,
     )
     test_async_session = async_sessionmaker(test_async_engine, expire_on_commit=False) # noqa
 
@@ -77,6 +80,14 @@ async def create_test_database():
     finally:
         await test_async_engine.dispose()
         async with default_engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "SELECT pg_terminate_backend(pid) "
+                    "FROM pg_stat_activity "
+                    "WHERE datname = :db_name AND pid <> pg_backend_pid()"
+                ),
+                {"db_name": TEST_DB_NAME},
+            )
             await conn.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}"')) # noqa
         await default_engine.dispose()
 
@@ -99,7 +110,7 @@ async def prepare_db(create_test_database):
 
 
 @pytest.fixture
-async def clean_db(create_test_database):
+async def clean_db(prepare_db, create_test_database):
     """
     Cleans the test database by dropping and recreating all tables and extensions.
 
@@ -108,8 +119,6 @@ async def clean_db(create_test_database):
     """
     engine, _ = create_test_database
     async with engine.begin() as conn:
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS btree_gin"))
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
