@@ -2,7 +2,7 @@
 PostgreSQL database package exports.
 """
 
-from src.db.postgres.database import Base
+from src.db.sqlalchemy import Base
 
 
 __all__ = [
