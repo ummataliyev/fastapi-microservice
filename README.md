@@ -21,7 +21,7 @@ A production-ready FastAPI microservice template with comprehensive features for
 
 ### Core Features
 - **FastAPI Framework** - Modern, fast (high-performance) web framework for building APIs with Python 3.11+
-- **PostgreSQL Database** - Robust relational database with SQLAlchemy ORM
+- **Multi-Database Support** - PostgreSQL, MySQL, and MongoDB providers
 - **Redis Integration** - Caching and message broker support
 - **JWT Authentication** - Secure token-based authentication system
 - **WebSocket Support** - Real-time bidirectional communication
@@ -75,15 +75,18 @@ fastapi-microservice/
 │   │
 │   ├── core/                          # Core Functionality
 │   │   ├── config.py                  # Configuration management
-│   │   ├── database.py                # Database connection setup
 │   │   ├── http_client.py             # HTTP client configuration
 │   │   ├── jwt.py                     # JWT utilities
+│   │   ├── mongo.py                   # MongoDB settings
+│   │   ├── mysql.py                   # MySQL settings
 │   │   ├── pagination.py              # Pagination helpers
+│   │   ├── postgres.py                # PostgreSQL settings
 │   │   ├── rate_limit.py              # Rate limiting configuration
 │   │   ├── redis.py                   # Redis client setup
 │   │   ├── settings.py                # Application settings
 │   │   ├── observability/             # Logging and monitoring
-│   │   │   └── logging.py
+│   │   │   ├── logging.py
+│   │   │   └── metrics.py
 │   │   ├── resilience/                # Resilience patterns
 │   │   │   ├── circuit_breaker.py
 │   │   │   └── retry.py
@@ -91,6 +94,11 @@ fastapi-microservice/
 │   │       └── limiter.py
 │   │
 │   ├── db/                            # Database Configuration
+│   │   ├── factory.py                 # Provider-aware DB manager factory
+│   │   ├── mongo/                     # MongoDB setup
+│   │   │   └── client.py
+│   │   ├── mysql/                     # MySQL setup
+│   │   │   └── database.py
 │   │   ├── postgres/                  # PostgreSQL setup
 │   │   │   ├── database.py
 │   │   │   └── mixins/                # Reusable model mixins
@@ -99,6 +107,8 @@ fastapi-microservice/
 │   │   │       └── timestamp.py       # Timestamp mixin
 │   │   └── redis/                     # Redis broker
 │   │       └── broker.py
+│   │   └── sqlalchemy/                # Shared SQLAlchemy declarative base
+│   │       └── base.py
 │   │
 │   ├── models/                        # SQLAlchemy Models
 │   │   └── users.py                   # User database model
@@ -111,6 +121,7 @@ fastapi-microservice/
 │   │
 │   ├── repositories/                  # Repository Layer - Data Access
 │   │   ├── base.py                    # Base repository with CRUD operations
+│   │   ├── mongo_users.py             # Mongo users repository
 │   │   └── users.py                   # User repository
 │   │
 │   ├── services/                      # Service Layer - Business Logic
@@ -122,6 +133,7 @@ fastapi-microservice/
 │   │   ├── auth.py                    # Authentication manager
 │   │   ├── base.py                    # Base manager
 │   │   ├── middleware.py              # Middleware manager
+│   │   ├── mongo.py                   # Mongo managers
 │   │   ├── transaction.py             # Transaction manager
 │   │   └── websocket.py               # WebSocket connection manager
 │   │
@@ -132,7 +144,9 @@ fastapi-microservice/
 │   ├── middlewares/                   # Custom Middleware
 │   │   ├── cors.py                    # CORS configuration
 │   │   ├── error_handler.py           # Global error handling
+│   │   ├── metrics.py                 # Prometheus middleware
 │   │   ├── request_id.py              # Request ID tracking
+│   │   ├── security_headers.py        # Security headers
 │   │   └── timing.py                  # Response time tracking
 │   │
 │   ├── security/                      # Security Layer
@@ -165,9 +179,14 @@ fastapi-microservice/
 │   │   │   └── users.py
 │   │   ├── integration/               # Integration tests
 │   │   │   ├── base/                  # Base test classes
+│   │   │   ├── test_provider_mongo_smoke.py
+│   │   │   ├── test_provider_mysql_smoke.py
 │   │   │   └── test_users_api.py
 │   │   └── unit/                      # Unit tests
 │   │       ├── base/                  # Base test classes
+│   │       ├── test_health_api.py
+│   │       ├── test_mappers_base.py
+│   │       ├── test_settings.py
 │   │       └── test_users_service.py
 │   │
 │   ├── enums/                         # Enumerations
@@ -179,6 +198,7 @@ fastapi-microservice/
 │   ├── nginx.conf                     # Nginx configuration
 │   └── commands/                      # Docker commands
 │       ├── api.sh                     # API startup script
+│       ├── migrate.sh                 # Migration script
 │       └── entrypoint.sh              # Container entrypoint
 │
 ├── docs/                              # Documentation
@@ -198,33 +218,12 @@ fastapi-microservice/
 ### Prerequisites
 
 - **Python 3.11+**
-- **PostgreSQL 14+**
+- **PostgreSQL 17+**
 - **Redis 6+**
 - **Docker & Docker Compose** (optional, but recommended)
 - **Poetry** or **UV** (for dependency management)
 
 ### Installation
-
-### Use As a Generator CLI
-
-Install the package, then use the admin command:
-
-```bash
-pip install fastapi-microservice
-fastapi-microservice-admin startproject my-service
-```
-
-This creates:
-
-```bash
-./my-service/
-```
-
-To choose a target folder:
-
-```bash
-fastapi-microservice-admin startproject my-service /path/to/projects
-```
 
 #### Option 1: Using Docker (Recommended)
 
@@ -241,9 +240,9 @@ make up
 
 This will start:
 - FastAPI application
-- PostgreSQL database
 - Redis
 - Nginx (reverse proxy)
+- One selected DB provider based on `DB_PROVIDER` in `infra/.env`
 
 3. **Apply database migrations:**
 ```bash
@@ -251,9 +250,9 @@ make upgrade
 ```
 
 4. **Access the application:**
-- API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-- Alternative docs: http://localhost:8000/redoc
+- API: http://localhost
+- API Documentation: http://localhost/docs
+- Alternative docs: http://localhost/redoc
 
 #### Option 2: Local Development
 
@@ -272,20 +271,17 @@ uv sync
 
 3. **Set up environment variables:**
 
-Create a local `.env` file in the project root:
-```bash
-cp .env.example .env
-```
-
-For Docker Compose, copy the infra file:
+Create Docker/local env file:
 ```bash
 cp infra/.env-example infra/.env
 ```
 
-4. **Start PostgreSQL and Redis:**
+Set `DB_PROVIDER` in `infra/.env` to one of: `postgres`, `mysql`, `mongo`.
+
+4. **Start backing services (example: PostgreSQL + Redis):**
 ```bash
 # Using Docker
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:14
+docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:17.5
 docker run -d -p 6379:6379 redis:6
 ```
 
@@ -320,6 +316,7 @@ Configuration is managed through environment variables and `src/core/settings.py
 - `APP_ENV`: one of `development`, `dev`, `local`, `test`, `staging`, `production`, `prod`
 - `TRUSTED_HOSTS`: comma-separated hosts; `*` is allowed only in development/test environments
 - `RUN_MIGRATIONS_ON_START`: controls whether container startup runs `alembic upgrade head`
+- `DB_PROVIDER`: selects active DB provider (`postgres`, `mysql`, `mongo`)
 - `AUTH_LOGIN_MAX_ATTEMPTS`: failed attempts before temporary lockout
 - `AUTH_LOGIN_WINDOW_SECONDS`: rolling window for counting failed login attempts
 - `AUTH_LOGIN_LOCKOUT_SECONDS`: lock duration after too many failed login attempts
@@ -404,8 +401,6 @@ make up
 make logs
 ```
 
-`make up` now runs a dedicated one-shot `migrate` service before API startup.
-
 **Build multi-architecture production image:**
 ```bash
 make buildx-create
@@ -435,26 +430,26 @@ make lint
 
 Once the application is running, you can access the interactive API documentation:
 
-- **Swagger UI**: http://localhost:8000/docs
+- **Swagger UI**: http://localhost/docs
   - Interactive API exploration
   - Try out endpoints directly
   - View request/response schemas
 
-- **ReDoc**: http://localhost:8000/redoc
+- **ReDoc**: http://localhost/redoc
   - Alternative documentation interface
   - Better for reading and reference
 
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
+- **OpenAPI JSON**: http://localhost/openapi.json
   - Raw OpenAPI specification
   - Can be imported into tools like Postman
 
-- **Metrics**: http://localhost:8000/metrics
+- **Metrics**: http://localhost/metrics
   - Prometheus formatted service metrics
 
 - **Health Probes**
-  - Liveness: http://localhost:8000/live
-  - Readiness: http://localhost:8000/ready
-  - Health: http://localhost:8000/health
+  - Liveness: http://localhost/live
+  - Readiness: http://localhost/ready
+  - Health: http://localhost/health
 
 ### Example API Endpoints
 
@@ -465,12 +460,12 @@ POST   /api/v1/auth/refresh     # Refresh access token
 GET    /api/v1/users/           # List users (paginated)
 POST   /api/v1/users/           # Create user
 GET    /api/v1/users/{id}       # Get user by ID
-PUT    /api/v1/users/{id}       # Update user
+PATCH  /api/v1/users/{id}       # Update user
 DELETE /api/v1/users/{id}       # Delete user
-WS     /api/v1/ws/chat/{room}    # WebSocket connection
+WS     /api/v1/ws/chat/{room}   # WebSocket connection (optional ?token=<access_token>)
 GET    /health                  # Basic health endpoint
 GET    /live                    # Liveness probe
-GET    /ready                   # Readiness probe (DB + Redis)
+GET    /ready                   # Readiness probe (includes database_type + checks)
 GET    /metrics                 # Prometheus metrics
 ```
 
