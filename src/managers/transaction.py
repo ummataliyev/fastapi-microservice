@@ -1,13 +1,11 @@
 """
 Async Transaction Manager
-
-Concrete implementation of an async transaction manager
-that initializes repositories and handles session commit/rollback.
 """
 
 from typing import Type
 from typing import TypeVar
 from typing import Generic
+from typing import Self
 from typing import Callable
 from typing import Optional
 
@@ -46,12 +44,13 @@ class TransactionManager(Generic[T], BaseTransactionManager):
         """
 
         self.session_factory = session_factory
+        self._session_cm = None
         self._repositories = {
             "users": UsersRepository,
             **repositories,
         }
 
-    async def __aenter__(self) -> "TransactionManager":
+    async def __aenter__(self) -> Self:
         """
         Enter the async context and initialize repositories.
 
@@ -59,7 +58,8 @@ class TransactionManager(Generic[T], BaseTransactionManager):
         :rtype: TransactionManager
         """
 
-        self.session = await self.session_factory().__aenter__()
+        self._session_cm = self.session_factory()
+        self.session = await self._session_cm.__aenter__()
         for name, repo_cls in self._repositories.items():
             setattr(self, name, repo_cls(self.session))
         return self
@@ -69,7 +69,7 @@ class TransactionManager(Generic[T], BaseTransactionManager):
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """
         Exit the async context.
 
@@ -83,9 +83,10 @@ class TransactionManager(Generic[T], BaseTransactionManager):
 
         if exc_type:
             await self.session.rollback()
-        await self.session.close()
+        if self._session_cm is not None:
+            await self._session_cm.__aexit__(exc_type, exc_val, exc_tb)
 
-    async def commit(self):
+    async def commit(self) -> None:
         """
         Commit the current session transaction.
 
@@ -94,7 +95,7 @@ class TransactionManager(Generic[T], BaseTransactionManager):
 
         await self.session.commit()
 
-    async def rollback(self):
+    async def rollback(self) -> None:
         """
         Rollback the current session transaction.
 
@@ -102,4 +103,3 @@ class TransactionManager(Generic[T], BaseTransactionManager):
         """
 
         await self.session.rollback()
-    

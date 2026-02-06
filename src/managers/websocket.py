@@ -9,6 +9,11 @@ from fastapi import WebSocket
 
 
 class WebSocketConnectionManager:
+    """
+    WebSocketConnectionManager class.
+    :raises Exception: If class initialization or usage fails.
+    """
+
     active_connections: Dict[str, Set[WebSocket]] = {}
 
     @classmethod

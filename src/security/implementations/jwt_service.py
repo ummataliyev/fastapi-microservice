@@ -14,12 +14,12 @@ from datetime import timezone
 from jwt import ExpiredSignatureError
 from jwt import InvalidTokenError as PyJWTInvalidTokenError
 
-from src.security.interfaces.token import TokenService
 from src.security.exceptions.token import TokenError
+from src.security.interfaces.token import TokenService
 from src.security.exceptions.token import TokenExpiredError
 from src.security.exceptions.token import InvalidTokenError
 
-from src.core.config import settings
+from src.core.settings import settings
 
 
 class JWTTokenService(TokenService):
@@ -74,7 +74,7 @@ class JWTTokenService(TokenService):
         :param data: Dictionary of claims to include in the token.
         :return: Encoded JWT access token as a string.
         """
-        exp = datetime.now(timezone.utc) + timedelta(minutes=self.access_exp_minutes)
+        exp = datetime.now(timezone.utc) + timedelta(minutes=self.access_exp_minutes) # noqa
         return self._encode(data, exp, "access")
 
     def create_refresh_token(self, data: Dict[str, Any]) -> str:
@@ -84,7 +84,7 @@ class JWTTokenService(TokenService):
         :param data: Dictionary of claims to include in the token.
         :return: Encoded JWT refresh token as a string.
         """
-        exp = datetime.now(timezone.utc) + timedelta(days=self.refresh_exp_days)
+        exp = datetime.now(timezone.utc) + timedelta(days=self.refresh_exp_days) # noqa
         return self._encode(data, exp, "refresh")
 
     def decode(self, token: str) -> Dict[str, Any]:

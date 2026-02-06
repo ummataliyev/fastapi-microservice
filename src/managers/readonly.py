@@ -1,11 +1,9 @@
 """
 Async Readonly Manager
-
-Concrete implementation of an async readonly manager
-that exposes repositories WITHOUT transaction / commit / rollback.
 """
 
 from typing import Type
+from typing import Self
 from typing import Optional
 from types import TracebackType
 
@@ -46,12 +44,13 @@ class ReadonlyManager(BaseAsyncManager):
         """
 
         self.session_factory = session_factory
+        self._session_cm = None
         self._repositories = {
             "users": UsersRepository,
             **repositories,
         }
 
-    async def __aenter__(self) -> "ReadonlyManager":
+    async def __aenter__(self) -> Self:
         """
         Enter the async context and initialize repositories.
 
@@ -62,7 +61,8 @@ class ReadonlyManager(BaseAsyncManager):
             The initialized ReadonlyManager instance.
         """
 
-        self.session = await self.session_factory().__aenter__()
+        self._session_cm = self.session_factory()
+        self.session = await self._session_cm.__aenter__()
         for name, repo_cls in self._repositories.items():
             setattr(self, name, repo_cls(self.session))
         return self
@@ -72,7 +72,7 @@ class ReadonlyManager(BaseAsyncManager):
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """
         Exit the async context.
 
@@ -89,4 +89,5 @@ class ReadonlyManager(BaseAsyncManager):
             None
         """
 
-        await self.session.close()
+        if self._session_cm is not None:
+            await self._session_cm.__aexit__(exc_type, exc_val, exc_tb)

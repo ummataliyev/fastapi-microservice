@@ -23,8 +23,11 @@ from src.schemas.pagination import PaginatedResponseSchema
 
 from src.exceptions.service.users import UserNotFound
 from src.exceptions.service.users import UserAlreadyExists
+from src.exceptions.service.users import InvalidUsersInput
+
 from src.exceptions.api.users import UserNotFoundHTTPException
 from src.exceptions.api.users import UserAlreadyExistsHTTPException
+from src.exceptions.api.users import InvalidUsersInputHTTPException
 
 
 router = APIRouter(
@@ -54,11 +57,18 @@ async def list(
     :param pagination: Pagination parameters (limit, offset, current_page).
     :return: Paginated list of user records.
     """
-    return await UsersService(db).get_list(
-        limit=pagination.limit,
-        offset=pagination.offset,
-        current_page=pagination.current_page,
-    )
+    try:
+        return await UsersService(db).get_list(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            current_page=pagination.current_page,
+        )
+    except InvalidUsersInput as ex:
+        raise InvalidUsersInputHTTPException(
+            detail=str(ex),
+            error_code=getattr(ex, "error_code", "BAD_REQUEST"),
+            details=getattr(ex, "details", None),
+        ) from ex
 
 
 @router.get(
@@ -85,7 +95,7 @@ async def get(
     try:
         return await UsersService(db).get_one_by_id(user_id)
     except UserNotFound as ex:
-        raise UserNotFoundHTTPException from ex
+        raise UserNotFoundHTTPException(detail=str(ex), details=getattr(ex, "details", None)) from ex
 
 
 @router.post(
@@ -113,7 +123,7 @@ async def create(
     try:
         return await UsersService(db).create(data)
     except UserAlreadyExists as ex:
-        raise UserAlreadyExistsHTTPException from ex
+        raise UserAlreadyExistsHTTPException(detail=str(ex), details=getattr(ex, "details", None)) from ex
 
 
 @router.patch(
@@ -142,7 +152,7 @@ async def update(
     try:
         return await UsersService(db).update(user_id, data)
     except UserNotFound as ex:
-        raise UserNotFoundHTTPException from ex
+        raise UserNotFoundHTTPException(detail=str(ex), details=getattr(ex, "details", None)) from ex
 
 
 @router.delete(
@@ -169,4 +179,4 @@ async def delete(
         deleted_id = await UsersService(db).delete(user_id)
         return {"status": "success", "id": deleted_id}
     except UserNotFound as ex:
-        raise UserNotFoundHTTPException from ex
+        raise UserNotFoundHTTPException(detail=str(ex), details=getattr(ex, "details", None)) from ex

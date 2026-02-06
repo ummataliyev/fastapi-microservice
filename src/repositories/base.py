@@ -13,15 +13,22 @@ from sqlalchemy import func
 from sqlalchemy import insert
 from sqlalchemy import select
 from sqlalchemy import update
+
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import with_loader_criteria
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.postgres import Base
+from src.db.sqlalchemy import Base
+
 from src.mappers.base import BaseDataMapper
+
 from src.exceptions.repository.base import ObjectNotFoundRepoException
 from src.exceptions.repository.base import CannotAddObjectRepoException
+from src.exceptions.repository.base import CannotUpdateObjectRepoException
+from src.exceptions.repository.base import CannotDeleteObjectRepoException
+from src.exceptions.repository.base import InvalidRepositoryInputRepoException
 
 
 T = TypeVar("T")
@@ -76,6 +83,39 @@ class BaseRepository(Generic[T]):
                     )
         return query
 
+    def _validate_filter_fields(self, filters: dict[str, Any]) -> None:
+        """
+        Validate that all filter keys are valid model attributes.
+        """
+
+        for field in filters:
+            if not hasattr(self.model, field):
+                raise InvalidRepositoryInputRepoException(
+                    f"Unknown filter field: {field}"
+                )
+
+    def _ensure_soft_delete_supported(self) -> None:
+        """
+        Ensure current model supports soft deletion operations.
+        """
+
+        if not hasattr(self.model, "deleted_at"):
+            raise InvalidRepositoryInputRepoException(
+                f"Model {self.model.__name__} does not support soft deletion"
+            )
+
+    def _supports_returning(self) -> bool:
+        """
+        Determine whether the current DB dialect supports DML RETURNING in this project setup.
+
+        :return: True when safe to use RETURNING clauses, otherwise False.
+        :rtype: bool
+        :raises Exception: If dialect inspection fails unexpectedly.
+        """
+        bind = self.session.get_bind()
+        dialect_name = bind.dialect.name if bind is not None else ""
+        return dialect_name not in {"mysql", "mariadb"}
+
     async def get_one(
         self, query_options: Iterable = None, with_rels: bool = False, **filter_by
     ) -> T:
@@ -89,6 +129,7 @@ class BaseRepository(Generic[T]):
         :raises ObjectNotFoundRepoException: If no matching object is found.
         """
 
+        self._validate_filter_fields(filter_by)
         query = select(self.model).filter_by(**filter_by)
         query = self._active_filter(query)
 
@@ -103,6 +144,10 @@ class BaseRepository(Generic[T]):
             model = result.scalar_one()
         except NoResultFound as ex:
             raise ObjectNotFoundRepoException from ex
+        except MultipleResultsFound as ex:
+            raise InvalidRepositoryInputRepoException(
+                "Multiple objects matched filters expected to return one"
+            ) from ex
 
         return self.mapper.map_to_domain_entity(model, with_rels=with_rels)
 
@@ -126,7 +171,8 @@ class BaseRepository(Generic[T]):
         """
 
         if limit < 0 or offset < 0:
-            raise ValueError("Limit and offset must be non-negative.")
+            raise InvalidRepositoryInputRepoException("Limit and offset must be non-negative.")
+        self._validate_filter_fields(filter_by)
 
         query = select(self.model).limit(limit).offset(offset)
         query = self._active_filter(query)
@@ -151,6 +197,7 @@ class BaseRepository(Generic[T]):
         :return: Domain entity or None if no match.
         """
 
+        self._validate_filter_fields(filter_by)
         query = select(self.model).filter_by(**filter_by)
         query = self._active_filter(query)
         result = await self.session.execute(query)
@@ -168,10 +215,17 @@ class BaseRepository(Generic[T]):
         :raises CannotAddObjectRepoException: If integrity constraint fails.
         """
 
-        stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
+        payload = data.model_dump()
         try:
-            result = await self.session.execute(stmt)
-            model = result.scalar_one()
+            if self._supports_returning():
+                stmt = insert(self.model).values(**payload).returning(self.model)
+                result = await self.session.execute(stmt)
+                model = result.scalar_one()
+            else:
+                model = self.model(**payload)
+                self.session.add(model)
+                await self.session.flush()
+                await self.session.refresh(model)
         except IntegrityError as ex:
             raise CannotAddObjectRepoException from ex
         return self.mapper.map_to_domain_entity(model)
@@ -203,17 +257,33 @@ class BaseRepository(Generic[T]):
         :raises ObjectNotFoundRepoException: If object does not exist.
         """
 
-        stmt = (
-            update(self.model)
-            .values(**data.model_dump(exclude_unset=partially))
-            .filter_by(**filter_by)
-            .returning(self.model)
-        )
-        result = await self.session.execute(stmt)
+        self._validate_filter_fields(filter_by)
+        update_payload = data.model_dump(exclude_unset=partially)
+        if not update_payload:
+            raise InvalidRepositoryInputRepoException("No fields provided for update.")
+
         try:
-            model = result.scalar_one()
+            if self._supports_returning():
+                stmt = (
+                    update(self.model)
+                    .values(**update_payload)
+                    .filter_by(**filter_by)
+                    .returning(self.model)
+                )
+                result = await self.session.execute(stmt)
+                model = result.scalar_one()
+            else:
+                stmt = update(self.model).values(**update_payload).filter_by(**filter_by)
+                result = await self.session.execute(stmt)
+                if (result.rowcount or 0) == 0:
+                    raise ObjectNotFoundRepoException
+                select_stmt = select(self.model).filter_by(**filter_by)
+                selected = await self.session.execute(select_stmt)
+                model = selected.scalar_one()
         except NoResultFound as ex:
             raise ObjectNotFoundRepoException from ex
+        except IntegrityError as ex:
+            raise CannotUpdateObjectRepoException from ex
         return self.mapper.map_to_domain_entity(model)
 
     async def delete_one(self, **filter_by) -> T:
@@ -225,17 +295,40 @@ class BaseRepository(Generic[T]):
         :raises ObjectNotFoundRepoException: If object does not exist.
         """
 
-        stmt = (
-            update(self.model)
-            .filter_by(**filter_by)
-            .where(self.model.deleted_at.is_(None))
-            .values(deleted_at=func.now())
-            .returning(self.model)
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if not model:
-            raise ObjectNotFoundRepoException
+        self._ensure_soft_delete_supported()
+        self._validate_filter_fields(filter_by)
+        try:
+            if self._supports_returning():
+                stmt = (
+                    update(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_(None))
+                    .values(deleted_at=func.now())
+                    .returning(self.model)
+                )
+                result = await self.session.execute(stmt)
+                model = result.scalar_one_or_none()
+                if not model:
+                    raise ObjectNotFoundRepoException
+            else:
+                stmt = (
+                    update(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_(None))
+                    .values(deleted_at=func.now())
+                )
+                result = await self.session.execute(stmt)
+                if (result.rowcount or 0) == 0:
+                    raise ObjectNotFoundRepoException
+                select_stmt = (
+                    select(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_not(None))
+                )
+                selected = await self.session.execute(select_stmt)
+                model = selected.scalar_one()
+        except IntegrityError as ex:
+            raise CannotDeleteObjectRepoException from ex
         return self.mapper.map_to_domain_entity(model)
 
     async def delete_bulk(self, list_ids: list[Any]) -> int:
@@ -246,6 +339,7 @@ class BaseRepository(Generic[T]):
         :return: Number of deleted rows.
         """
 
+        self._ensure_soft_delete_supported()
         stmt = (
             update(self.model)
             .where(self.model.id.in_(list_ids))
@@ -264,17 +358,40 @@ class BaseRepository(Generic[T]):
         :raises ObjectNotFoundRepoException: If object does not exist or is not deleted.
         """
 
-        stmt = (
-            update(self.model)
-            .filter_by(**filter_by)
-            .where(self.model.deleted_at.is_not(None))
-            .values(deleted_at=None)
-            .returning(self.model)
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if not model:
-            raise ObjectNotFoundRepoException
+        self._ensure_soft_delete_supported()
+        self._validate_filter_fields(filter_by)
+        try:
+            if self._supports_returning():
+                stmt = (
+                    update(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_not(None))
+                    .values(deleted_at=None)
+                    .returning(self.model)
+                )
+                result = await self.session.execute(stmt)
+                model = result.scalar_one_or_none()
+                if not model:
+                    raise ObjectNotFoundRepoException
+            else:
+                stmt = (
+                    update(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_not(None))
+                    .values(deleted_at=None)
+                )
+                result = await self.session.execute(stmt)
+                if (result.rowcount or 0) == 0:
+                    raise ObjectNotFoundRepoException
+                select_stmt = (
+                    select(self.model)
+                    .filter_by(**filter_by)
+                    .where(self.model.deleted_at.is_(None))
+                )
+                selected = await self.session.execute(select_stmt)
+                model = selected.scalar_one()
+        except IntegrityError as ex:
+            raise CannotUpdateObjectRepoException from ex
         return self.mapper.map_to_domain_entity(model)
 
     async def restore_bulk(self, list_ids: list[Any]) -> int:
@@ -285,6 +402,7 @@ class BaseRepository(Generic[T]):
         :return: Number of restored rows.
         """
 
+        self._ensure_soft_delete_supported()
         stmt = (
             update(self.model)
             .where(self.model.id.in_(list_ids))
@@ -306,6 +424,7 @@ class BaseRepository(Generic[T]):
         stmt = self._active_filter(stmt)
 
         if filters:
+            self._validate_filter_fields(filters)
             for field, value in filters.items():
                 stmt = stmt.where(getattr(self.model, field) == value)
 
