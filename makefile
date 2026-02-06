@@ -10,6 +10,7 @@ PLATFORM ?= linux/amd64
 PLATFORMS ?= linux/amd64,linux/arm64
 DB_PROVIDER ?= $(shell awk -F= '/^DB_PROVIDER=/{print $$2}' infra/.env | tr -d '[:space:]')
 COMPOSE_PROFILES ?= $(DB_PROVIDER)
+ALL_PROFILES = postgres,mysql,mongo
 
 .DEFAULT_GOAL := help
 
@@ -26,7 +27,7 @@ up-mongo:
 	DB_PROVIDER=mongo COMPOSE_PROFILES=mongo $(DOCKER_COMPOSE) up --build -d
 
 down:
-	$(DOCKER_COMPOSE) down
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) down --remove-orphans
 
 restart:
 	$(DOCKER_COMPOSE) restart $(API_SERVICE)
@@ -41,7 +42,7 @@ psql:
 	$(DOCKER_COMPOSE) exec $(DB_SERVICE) psql -U $$POSTGRES_USER $$POSTGRES_DB
 
 clean:
-	$(DOCKER_COMPOSE) down -v
+	COMPOSE_PROFILES=$(ALL_PROFILES) $(DOCKER_COMPOSE) down -v --remove-orphans
 
 build:
 	DB_PROVIDER=$(DB_PROVIDER) COMPOSE_PROFILES=$(COMPOSE_PROFILES) $(DOCKER_COMPOSE) build
