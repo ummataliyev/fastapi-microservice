@@ -2,7 +2,7 @@
 MySQL database package exports.
 """
 
-from src.db.mysql.database import Base
+from src.db.sqlalchemy import Base
 
 __all__ = [
     "Base",
