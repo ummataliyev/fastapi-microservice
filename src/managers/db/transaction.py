@@ -1,4 +1,5 @@
 from src.managers.db.base import BaseTransactionManager
+from src.repositories.items import ItemsRepository
 from src.repositories.users import UsersRepository
 
 
@@ -6,6 +7,7 @@ class TransactionManager(BaseTransactionManager):
     """Read/write session. Commits on clean exit, rolls back on exception."""
 
     users: UsersRepository
+    items: ItemsRepository
 
     async def __aenter__(self) -> "TransactionManager":
         await self._open_session()
@@ -23,3 +25,4 @@ class TransactionManager(BaseTransactionManager):
 
     def _wire_repositories(self) -> None:
         self.users = UsersRepository(self.session)
+        self.items = ItemsRepository(self.session)

@@ -1,4 +1,5 @@
 from src.managers.db.base import BaseTransactionManager
+from src.repositories.items import ItemsRepository
 from src.repositories.users import UsersRepository
 
 
@@ -6,6 +7,7 @@ class ReadonlyManager(BaseTransactionManager):
     """Read-only session. Always rolls back on exit (never commits)."""
 
     users: UsersRepository
+    items: ItemsRepository
 
     async def __aenter__(self) -> "ReadonlyManager":
         await self._open_session()
@@ -20,3 +22,4 @@ class ReadonlyManager(BaseTransactionManager):
 
     def _wire_repositories(self) -> None:
         self.users = UsersRepository(self.session)
+        self.items = ItemsRepository(self.session)
