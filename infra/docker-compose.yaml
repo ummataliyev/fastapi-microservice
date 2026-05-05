@@ -1,0 +1,49 @@
+services:
+  template-service:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: dev
+    container_name: template-service
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src
+      - logs:/app/logs
+      - files:/app/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - template-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: template-service-postgres
+    environment:
+      POSTGRES_DB: template_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d template_service_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - template-network
+
+volumes:
+  postgres-data:
+  logs:
+  files:
+
+networks:
+  template-network:
+    driver: bridge

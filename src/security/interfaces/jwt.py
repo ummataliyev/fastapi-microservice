@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class JWTHandler(Protocol):
+    def encode(self, payload: dict, expires_delta_minutes: int | None = None) -> str: ...
+    def decode(self, token: str) -> dict: ...

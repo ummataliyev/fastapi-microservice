@@ -2,19 +2,20 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: [dev]
   pull_request:
+    branches: [dev]
 
 jobs:
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:16
         env:
-          POSTGRES_DB: postgres
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
@@ -22,53 +23,28 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      APP_ENV: test
-      DEBUG: "false"
-      TRACING_ENABLED: "false"
-      DOCS_ENABLED: "false"
-      REDOC_ENABLED: "false"
-      OPENAPI_ENABLED: "false"
-      POSTGRES_DB: micro-service
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_HOST: 127.0.0.1
-      POSTGRES_PORT: 5432
-      REDIS_HOST: 127.0.0.1
-      REDIS_PORT: 6379
-      JWT_SECRET_KEY: ci-secret-key
-      RATE_LIMIT_ENABLED: "false"
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11.2"
+      - uses: actions/checkout@v4
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --frozen
+        run: uv sync --all-extras
 
-      - name: Lint
-        run: uv run ruff check src
+      - name: Ruff
+        run: uv run ruff check src/
 
-      - name: Unit tests
-        run: uv run pytest -q src/tests/unit
-
-      - name: Integration tests
-        run: uv run pytest -q src/tests/integration
+      - name: Pytest
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_DATABASE: postgres
+          JWT_SECRET_KEY: ci-test-secret
+        run: uv run pytest src/tests/ -v

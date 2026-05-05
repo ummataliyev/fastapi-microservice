@@ -1,79 +1,28 @@
-"""
-Repository for User persistence and retrieval.
-"""
-
-from src.models.users import Users
+from sqlalchemy import select
 
 from src.mappers.users import UsersMapper
-
+from src.models.users import Users
 from src.repositories.base import BaseRepository
-
-from src.exceptions.repository.users import UserNotFoundRepoException
-from src.exceptions.repository.base import ObjectNotFoundRepoException
-from src.exceptions.repository.base import CannotAddObjectRepoException
-from src.exceptions.repository.users import UserAlreadyExistsRepoException
-from src.exceptions.repository.base import CannotUpdateObjectRepoException
-from src.exceptions.repository.base import CannotDeleteObjectRepoException
+from src.schemas.users import UserInternalSchema, UserReadSchema
 
 
-class UsersRepository(BaseRepository[Users]):
-    """
-    Repository for managing User persistence and retrieval.
-    """
-
+class UsersRepository(BaseRepository[Users, UserReadSchema]):
     model = Users
     mapper = UsersMapper
+    entity_name = "User"
 
-    async def get_one(self, **kwargs):
-        """
-        Retrieve a single user by filter.
-        Raises UserNotFoundRepoException if not found.
-        """
-        try:
-            return await super().get_one(**kwargs)
-        except ObjectNotFoundRepoException as ex:
-            raise UserNotFoundRepoException(details={"source_error": str(ex)}) from ex
+    async def get_by_email(self, email: str) -> UserReadSchema | None:
+        stmt = self._active_filter(select(Users).where(Users.email == email))
+        instance = (await self.session.execute(stmt)).scalar_one_or_none()
+        return self.mapper.map_to_domain_entity(instance) if instance else None
 
-    async def add(self, data):
-        """
-        Add a new user to the database.
-        Raises UserAlreadyExistsRepoException if email already exists.
-        """
-        try:
-            return await super().add(data)
-        except CannotAddObjectRepoException as ex:
-            raise UserAlreadyExistsRepoException(details={"source_error": str(ex)}) from ex
+    async def get_internal_by_email(self, email: str) -> UserInternalSchema | None:
+        stmt = self._active_filter(select(Users).where(Users.email == email))
+        instance = (await self.session.execute(stmt)).scalar_one_or_none()
+        if instance is None:
+            return None
+        return UserInternalSchema.model_validate(instance, from_attributes=True)
 
-    async def update_one(self, data, partially: bool = False, **kwargs):
-        """
-        Update a user.
-        Raises UserNotFoundRepoException if not found.
-        """
-        try:
-            return await super().update_one(data, partially=partially, **kwargs)
-        except ObjectNotFoundRepoException as ex:
-            raise UserNotFoundRepoException(details={"source_error": str(ex)}) from ex
-        except CannotUpdateObjectRepoException as ex:
-            raise UserAlreadyExistsRepoException(details={"source_error": str(ex)}) from ex
-
-    async def delete_one(self, **kwargs):
-        """
-        Soft delete a user.
-        Raises UserNotFoundRepoException if not found.
-        """
-        try:
-            return await super().delete_one(**kwargs)
-        except ObjectNotFoundRepoException as ex:
-            raise UserNotFoundRepoException(details={"source_error": str(ex)}) from ex
-        except CannotDeleteObjectRepoException as ex:
-            raise UserNotFoundRepoException(details={"source_error": str(ex)}) from ex
-
-    async def restore_one(self, **kwargs):
-        """
-        Restore a soft-deleted user.
-        Raises UserNotFoundRepoException if not found or not deleted.
-        """
-        try:
-            return await super().restore_one(**kwargs)
-        except ObjectNotFoundRepoException as ex:
-            raise UserNotFoundRepoException(details={"source_error": str(ex)}) from ex
+    def list_select(self):
+        """Public Select for pagination — applies the soft-delete filter."""
+        return self._active_filter(select(Users))

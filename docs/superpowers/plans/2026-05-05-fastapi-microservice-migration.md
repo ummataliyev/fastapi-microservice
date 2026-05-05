@@ -28,7 +28,7 @@ cd /Users/the_elita/Desktop/apps/github/microservices/fastapi-microservice
 git status
 ```
 
-Expected: clean working tree, branch `main` (or current default).
+Expected: clean working tree, branch `dev` (or current default).
 
 If unclean, stop and resolve before proceeding.
 
@@ -44,7 +44,7 @@ git tag -a pre-migration -m "Snapshot of fastapi-microservice before boilerplate
 git checkout -b pre-migration-backup
 git push -u origin pre-migration-backup
 git push origin pre-migration
-git checkout main
+git checkout dev
 ```
 
 Expected: backup branch and tag both visible on remote.
@@ -1442,9 +1442,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
   pull_request:
-    branches: [main]
+    branches: [dev]
 
 jobs:
   lint-and-test:
