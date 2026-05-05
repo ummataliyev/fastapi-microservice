@@ -126,13 +126,6 @@ async def create(
         raise UserAlreadyExistsHTTPException(detail=str(ex), details=getattr(ex, "details", None)) from ex
 
 
-@router.patch(
-    "/{user_id}",
-    response_model=UserReadSchema,
-    status_code=status.HTTP_200_OK,
-    summary="Update user",
-    description="Update user information partially by user ID.",
-)
 @limiter.ppd_limiter()
 async def update(
     user_id: int,

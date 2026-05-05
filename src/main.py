@@ -55,14 +55,12 @@ def create_application() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        """
-        Lifespan.
-
-        :param _: TODO - describe _.
-        :type _: FastAPI
-        :return: None.
-        :raises Exception: If the operation fails.
-        """
+        """Application lifespan: run startup checks and clean up on shutdown."""
+        try:
+            await redis_client.ping()
+        except Exception as ex:
+            import logging
+            logging.getLogger(__name__).warning(f"Redis not reachable on startup: {ex}")
         yield
         if settings.db_provider.lower() == "mongo":
             from src.db.mongo.client import close_mongo_client
@@ -100,10 +98,5 @@ app = create_application()
     tags=["Status"],
 )
 async def root():
-    """
-    Root.
-
-    :return: TODO - describe return value.
-    :raises Exception: If the operation fails.
-    """
+    """Return a simple status message indicating the service is running."""
     return f"{settings.app_name} is running!"

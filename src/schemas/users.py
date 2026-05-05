@@ -68,6 +68,17 @@ class UserReadSchema(UUIDSchema, TimestampSchema, BaseModel):
         from_attributes = True
 
 
+class UserInternalCreateSchema(BaseModel):
+    """
+    Internal schema for creating a user with an already-hashed password.
+    Bypasses password validation since the value is a bcrypt hash.
+    Should only be used within the auth/user service layer.
+    """
+
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., description="Pre-hashed password")
+
+
 class UserInternalSchema(UserReadSchema):
     """
     Internal schema that includes password for authentication operations.

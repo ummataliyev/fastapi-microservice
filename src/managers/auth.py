@@ -12,6 +12,8 @@ from src.exceptions.service.auth import InvalidToken
 from src.exceptions.service.users import UserNotFound
 from src.exceptions.service.auth import InvalidTokenType
 
+from src.exceptions.repository.users import UserNotFoundRepoException
+
 from src.security.exceptions.token import TokenError
 from src.security.implementations.jwt_service import JWTTokenService
 from src.security.implementations.bcrypt_hasher import BcryptPasswordHasher
@@ -97,9 +99,10 @@ class AuthManager:
             raise InvalidTokenType("Token must be access type")
 
         user_id = int(payload.get("sub"))
-        user = await self.tm.users.get_one(id=user_id)
 
-        if not user:
+        try:
+            user = await self.tm.users.get_one(id=user_id)
+        except UserNotFoundRepoException:
             raise UserNotFound("User not found")
 
         return user

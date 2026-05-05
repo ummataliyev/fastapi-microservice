@@ -48,7 +48,6 @@ jobs:
       REDIS_PORT: 6379
       JWT_SECRET_KEY: ci-secret-key
       RATE_LIMIT_ENABLED: "false"
-      RATE_LIMIT_RATE_LIMIT_ENABLED: "false"
 
     steps:
       - name: Checkout

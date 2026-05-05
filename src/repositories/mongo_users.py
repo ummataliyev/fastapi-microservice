@@ -286,7 +286,7 @@ class MongoUsersRepository:
         :return: None.
         :raises InvalidRepositoryInputRepoException: If the operation cannot be completed.
         """
-        allowed = {"id", "email", "deleted_at"}
+        allowed = {"id", "email", "deleted_at", "created_at", "updated_at"}
         for field in filters:
             if field not in allowed:
                 raise InvalidRepositoryInputRepoException(f"Unknown filter field: {field}") # noqa
