@@ -84,6 +84,24 @@ def create_application() -> FastAPI:
             "version": settings.app_version,
         }
 
+    @app.get("/template/ready", include_in_schema=False)
+    async def ready() -> dict:
+        from sqlalchemy import text
+
+        from src.db.postgres.instance import AsyncSessionFactory
+
+        try:
+            async with AsyncSessionFactory() as s:
+                await s.execute(text("SELECT 1"))
+            db_state = "ok"
+        except Exception:
+            db_state = "failed"
+        is_ready = db_state == "ok"
+        return {
+            "status": "ready" if is_ready else "degraded",
+            "checks": {"database": db_state},
+        }
+
     @app.get("/template/openapi.json", include_in_schema=False)
     async def openapi(_: Annotated[str, Depends(get_current_user_for_docs)]) -> dict:
         return get_openapi(title=app.title, version=app.version, routes=app.routes)
