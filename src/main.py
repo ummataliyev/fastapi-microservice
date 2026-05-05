@@ -47,6 +47,20 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
+    from src.api.middlewares.error_handler import ErrorHandlerMiddleware
+    from src.api.middlewares.request_id import RequestIDMiddleware
+    from src.api.middlewares.security_headers import SecurityHeadersMiddleware
+    from src.api.middlewares.timing import TimingMiddleware
+
+    app.add_middleware(
+        ErrorHandlerMiddleware, debug=settings.app_env == "development"
+    )
+    app.add_middleware(
+        TimingMiddleware,
+        slow_threshold_ms=settings.slow_request_threshold_ms,
+    )
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestIDMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_allow_origins,

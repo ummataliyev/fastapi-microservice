@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     # Use ["*"] for permissive dev only.
     cors_allow_origins: list[str] = ["*"]
 
+    slow_request_threshold_ms: float = 1000.0
+
     docs_username: str = "admin"
     docs_password: str = "admin"
 
