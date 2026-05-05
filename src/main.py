@@ -1,102 +1,84 @@
-"""
-Main entry point for the FastAPI application.
-"""
-
 from contextlib import asynccontextmanager
+from typing import Annotated, AsyncIterator
 
-from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
+import sentry_sdk
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from fastapi_pagination import add_pagination
+from prometheus_fastapi_instrumentator import Instrumentator
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
-from src.api import main_router
-
+from src.api.dependencies.docs import get_current_user_for_docs
+from src.api.handlers.exceptions import register_exception_handlers
+from src.api.v1 import api_v1_router
+from src.core.observability.logging import get_logger, setup_logging
 from src.core.settings import settings
+from src.jobs.lifespan import combined_lifespan
 
-from src.db.redis.broker import redis_client
-
-from src.managers.middleware import MiddlewareManager
+logger = get_logger(__name__)
 
 
-def _setup_tracing(app: FastAPI) -> None:
-    """
-    Configure OpenTelemetry tracing with Jaeger exporter.
-    Only initializes if tracing is enabled in settings.
-    """
-    from opentelemetry import trace
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-    trace.set_tracer_provider(
-        TracerProvider(
-            resource=Resource.create({
-                "service.name": "fastapi-microservice"
-            })
-        )
-    )
-
-    jaeger_exporter = JaegerExporter(
-        agent_host_name="jaeger",
-        agent_port=6831,
-    )
-
-    trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(jaeger_exporter)
-    )
-
-    FastAPIInstrumentor.instrument_app(app)
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async with combined_lifespan(app):
+        yield
 
 
 def create_application() -> FastAPI:
-    """
-    Create and configure FastAPI application
-    """
+    setup_logging()
+    logger.info("Starting %s v%s", settings.app_name, settings.app_version)
 
-    @asynccontextmanager
-    async def lifespan(_: FastAPI):
-        """Application lifespan: run startup checks and clean up on shutdown."""
-        try:
-            await redis_client.ping()
-        except Exception as ex:
-            import logging
-            logging.getLogger(__name__).warning(f"Redis not reachable on startup: {ex}")
-        yield
-        if settings.db_provider.lower() == "mongo":
-            from src.db.mongo.client import close_mongo_client
-            await close_mongo_client()
-        await redis_client.aclose()
+    if settings.sentry_dsn:
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.app_env,
+            integrations=[SqlalchemyIntegration()],
+            traces_sample_rate=0.1,
+        )
 
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
-        debug=settings.debug,
-        docs_url="/docs" if settings.docs_enabled else None,
-        redoc_url="/redoc" if settings.redoc_enabled else None,
-        openapi_url="/openapi.json" if settings.openapi_enabled else None,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
         lifespan=lifespan,
     )
 
-    if settings.tracing_enabled:
-        _setup_tracing(app)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allow_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-    middleware_manager = MiddlewareManager(debug=settings.debug)
-    middleware_manager.setup(app)
+    Instrumentator().instrument(app).expose(
+        app, endpoint="/template/metrics", include_in_schema=False
+    )
+    app.include_router(api_v1_router)
+    register_exception_handlers(app)
+    add_pagination(app)
 
-    app.include_router(main_router)
+    @app.get("/template/health", include_in_schema=False)
+    async def health() -> dict:
+        return {
+            "status": "ok",
+            "service": settings.app_name,
+            "version": settings.app_version,
+        }
+
+    @app.get("/template/openapi.json", include_in_schema=False)
+    async def openapi(_: Annotated[str, Depends(get_current_user_for_docs)]) -> dict:
+        return get_openapi(title=app.title, version=app.version, routes=app.routes)
+
+    @app.get("/template/docs", include_in_schema=False)
+    async def docs(_: Annotated[str, Depends(get_current_user_for_docs)]):
+        return get_swagger_ui_html(openapi_url="/template/openapi.json", title=app.title)
 
     return app
 
 
 app = create_application()
-
-
-@app.get(
-    path="/",
-    response_class=PlainTextResponse,
-    summary="Service status",
-    tags=["Status"],
-)
-async def root():
-    """Return a simple status message indicating the service is running."""
-    return f"{settings.app_name} is running!"

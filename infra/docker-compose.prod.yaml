@@ -1,0 +1,21 @@
+services:
+  template-service-new:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: prod
+    container_name: template-service-new
+    env_file:
+      - .env
+    network_mode: host
+    environment:
+      GUNICORN_BIND: 0.0.0.0:9000
+    volumes:
+      - ./logs:/app/logs
+      - ./files:/app/files
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/template/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
