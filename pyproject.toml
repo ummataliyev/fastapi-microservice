@@ -1,26 +1,28 @@
 [project]
-name = "template-service"
+name = "fastapi-microservice"
 version = "0.1.0"
-description = "Service description"
+description = "FastAPI microservice template — postgres + JWT auth + middlewares"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
-    "gunicorn>=23.0.0",
-    "sqlalchemy[asyncio]>=2.0.36",
-    "asyncpg>=0.30.0",
     "alembic>=1.14.0",
+    "apscheduler>=3.10.4",
+    "asyncpg>=0.30.0",
+    "email-validator>=2.2.0",
+    "fastapi>=0.115.0",
+    "fastapi-pagination>=0.12.32",
+    "gunicorn>=23.0.0",
+    "httpx>=0.28.0",
+    "passlib[bcrypt]>=1.7.4",
+    "prometheus-fastapi-instrumentator>=7.0.0",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.6.0",
     "pyjwt>=2.10.0",
-    "passlib[bcrypt]>=1.7.4",
-    "httpx>=0.28.0",
-    "apscheduler>=3.10.4",
-    "fastapi-pagination>=0.12.32",
-    "prometheus-fastapi-instrumentator>=7.0.0",
-    "sentry-sdk[fastapi]>=2.18.0",
     "python-multipart>=0.0.12",
+    "sentry-sdk[fastapi]>=2.18.0",
+    "sqlalchemy[asyncio]>=2.0.36",
     "tzdata>=2024.2",
+    "uvicorn[standard]>=0.32.0",
 ]
 
 [dependency-groups]
