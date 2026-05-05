@@ -32,7 +32,8 @@ go-microservice/
 │   │       ├── request_id.go
 │   │       ├── security_headers.go
 │   │       ├── timing.go
-│   │       └── trusted_host.go
+│   │       ├── trusted_host.go
+│   │       └── auth.go
 │   ├── config/
 │   │   └── config.go               # Env-based config (Viper)
 │   ├── db/
@@ -143,7 +144,7 @@ SQL files embedded via `//go:embed` in `internal/db/migrations/`. Ships with the
 ```go
 type Hasher interface {
     Hash(password string) (string, error)
-    Verify(password, hash string) (bool, error)
+    Verify(password, hash string) error  // nil = match, non-nil = mismatch
 }
 
 type TokenService interface {
@@ -167,9 +168,10 @@ Implements the `Hasher` interface. Hash on registration, verify on login.
 ### Auth Middleware
 
 - Extracts Bearer token from Authorization header
-- Validates JWT, loads user from DB
-- Sets user in `c.Locals("user", user)`
+- Validates JWT, checks token_type is "access"
+- Sets claims in `c.Locals("claims", claims)` with user_id and email
 - Returns 401 for invalid/expired tokens
+- Handler layer fetches full user from DB if needed
 
 ### Auth Endpoints
 
@@ -255,7 +257,7 @@ Response includes: `total_pages`, `current_page`, `total_items`, `has_next`, `ha
 ## Config (Viper)
 
 Reads from env vars + `.env` file. Nested config struct:
-- `Server`: host, port, environment, debug, trusted_hosts, app_name, app_version, api_prefix
+- `Server`: host, port, environment, debug, trusted_hosts, app_name, app_version, api_prefix, db_provider
 - `JWT`: secret_key, algorithm, access_token_expiry, refresh_token_expiry
 - `Auth`: max_attempts, window_seconds, lockout_seconds
 - `Postgres`: DSN, pool_size, pool_max_idle, pool_max_lifetime
@@ -337,7 +339,7 @@ repo := repository.NewUserPostgres(db)
 jwtSvc := security.NewJWTService(cfg.JWT)
 hasher := security.NewBcryptHasher()
 authSvc := service.NewAuth(repo, jwtSvc, hasher, redisClient, cfg.Auth)
-userSvc := service.NewUsers(repo)
+userSvc := service.NewUsers(repo, hasher)
 authHandler := handlers.NewAuth(authSvc)
 userHandler := handlers.NewUsers(userSvc)
 healthHandler := handlers.NewHealth(db, redisClient)

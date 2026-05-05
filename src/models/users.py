@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy import Index
 from sqlalchemy import String
 from sqlalchemy import CheckConstraint
+from sqlalchemy import event
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -39,11 +40,12 @@ class Users(Base, IDPkMixin, TimestampMixin, SoftDeletionMixin):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     def __repr__(self) -> str:
-        """
-          repr  .
+        return f"<User(id={self.id}, email={self.email})>"
 
-        :return: TODO - describe return value.
-        :rtype: str
-        :raises Exception: If the operation fails.
-        """
-        return f"<User(email={self.email})>"
+
+@event.listens_for(Users, "before_insert")
+@event.listens_for(Users, "before_update")
+def _normalize_email(mapper, connection, target):
+    """Ensure email is always stored lowercase regardless of insert path."""
+    if target.email:
+        target.email = target.email.lower()

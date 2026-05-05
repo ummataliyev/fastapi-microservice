@@ -16,19 +16,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
-        Dispatch.
+        Inject security headers into every HTTP response and strip
+        server-identifying headers.
 
-        :param request: TODO - describe request.
-        :type request: Request
-        :param call_next: TODO - describe call_next.
-        :type call_next: Callable
-        :return: TODO - describe return value.
-        :rtype: Response
-        :raises Exception: If the operation fails.
+        :param request: Incoming HTTP request.
+        :param call_next: Next middleware/handler in the chain.
+        :return: Response with security headers applied.
         """
         response = await call_next(request)
         path = request.url.path
 
+        response.headers.pop("X-Powered-By", None)
+        response.headers.pop("Server", None)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")

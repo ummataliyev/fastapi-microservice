@@ -39,8 +39,8 @@ class BaseRepository(Generic[T]):
     Base repository providing generic CRUD operations for SQLAlchemy models.
     """
 
-    model: type[Base] = None
-    mapper: type[BaseDataMapper] = None
+    model: type[Base] | None = None
+    mapper: type[BaseDataMapper] | None = None
 
     def __init__(self, session: AsyncSession):
         """

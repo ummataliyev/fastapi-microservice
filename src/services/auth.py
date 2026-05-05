@@ -14,8 +14,8 @@ from src.services.base import BaseService
 
 from src.schemas.auth import LoginSchema
 from src.schemas.users import UserReadSchema
-from src.schemas.users import UserCreateSchema
 from src.schemas.users import UserInternalSchema
+from src.schemas.users import UserInternalCreateSchema
 from src.schemas.auth import TokenResponseSchema
 
 from src.exceptions.service.auth import InvalidToken
@@ -64,7 +64,7 @@ class AuthService(BaseService):
             raise UserAlreadyExists("User with this email already exists")
 
         hashed_password = self.password_hasher.hash(data.password)
-        user_data = UserCreateSchema(email=normalized_email, password=hashed_password) # noqa
+        user_data = UserInternalCreateSchema(email=normalized_email, password=hashed_password)
 
         try:
             user = await self.db.users.add(user_data)
@@ -203,121 +203,115 @@ class AuthService(BaseService):
     @staticmethod
     def _refresh_active_key(jti: str) -> str:
         """
-         refresh active key.
+        Build the Redis key for an active refresh token.
 
-        :param jti: TODO - describe jti.
+        :param jti: JWT ID of the refresh token.
         :type jti: str
-        :return: TODO - describe return value.
+        :return: Redis key string.
         :rtype: str
-        :raises Exception: If the operation fails.
         """
         return f"auth:refresh:active:{jti}"
 
     @staticmethod
     def _refresh_revoked_key(jti: str) -> str:
         """
-         refresh revoked key.
+        Build the Redis key for a revoked refresh token.
 
-        :param jti: TODO - describe jti.
+        :param jti: JWT ID of the refresh token.
         :type jti: str
-        :return: TODO - describe return value.
+        :return: Redis key string.
         :rtype: str
-        :raises Exception: If the operation fails.
         """
         return f"auth:refresh:revoked:{jti}"
 
     @staticmethod
     def _login_fail_key(scope: str, value: str) -> str:
         """
-         login fail key.
+        Build the Redis key for tracking failed login attempts.
 
-        :param scope: TODO - describe scope.
+        :param scope: Scope of the key (e.g. "email" or "ip").
         :type scope: str
-        :param value: TODO - describe value.
+        :param value: The scoped value (email address or IP).
         :type value: str
-        :return: TODO - describe return value.
+        :return: Redis key string.
         :rtype: str
-        :raises Exception: If the operation fails.
         """
         return f"auth:login:fail:{scope}:{value}"
 
     @staticmethod
     def _login_lock_key(scope: str, value: str) -> str:
         """
-         login lock key.
+        Build the Redis key for login lockout state.
 
-        :param scope: TODO - describe scope.
+        :param scope: Scope of the key (e.g. "email" or "ip").
         :type scope: str
-        :param value: TODO - describe value.
+        :param value: The scoped value (email address or IP).
         :type value: str
-        :return: TODO - describe return value.
+        :return: Redis key string.
         :rtype: str
-        :raises Exception: If the operation fails.
         """
         return f"auth:login:lock:{scope}:{value}"
 
     async def _store_active_refresh_jti(self, jti: str) -> None:
         """
-         store active refresh jti.
+        Store a refresh token JTI as active in Redis with an expiry
+        matching the refresh token lifetime.
 
-        :param jti: TODO - describe jti.
+        :param jti: JWT ID of the refresh token to mark as active.
         :type jti: str
-        :return: None.
-        :raises Exception: If the operation fails.
         """
-        ttl_seconds = max(settings.jwt.refresh_token_expire_days * 24 * 60 * 60, 1) # noqa
+        ttl_seconds = max(settings.jwt.refresh_token_expire_days * 24 * 60 * 60, 1)
         try:
-            await redis_client.set(self._refresh_active_key(jti), "1", ex=ttl_seconds) # noqa
+            await redis_client.set(self._refresh_active_key(jti), "1", ex=ttl_seconds)
         except Exception as ex:
-            logger.warning(f"Failed to store active refresh token JTI: {ex}")
+            logger.error(f"Failed to store active refresh token JTI: {ex}")
 
     async def _is_refresh_token_revoked_or_unknown(self, jti: str) -> bool:
         """
-         is refresh token revoked or unknown.
+        Check whether a refresh token has been revoked or is not tracked as active.
 
-        :param jti: TODO - describe jti.
+        :param jti: JWT ID of the refresh token to check.
         :type jti: str
-        :return: TODO - describe return value.
+        :return: True if the token is revoked or not found as active.
         :rtype: bool
-        :raises Exception: If the operation fails.
         """
         try:
             is_revoked = await redis_client.get(self._refresh_revoked_key(jti))
             is_active = await redis_client.get(self._refresh_active_key(jti))
             return bool(is_revoked) or not bool(is_active)
         except Exception as ex:
-            logger.warning(f"Failed to verify refresh token state in Redis: {ex}") # noqa
+            logger.error(f"Failed to verify refresh token state in Redis: {ex}")
             return True
 
     async def _revoke_refresh_token(self, jti: str, exp: Any) -> None:
         """
-         revoke refresh token.
+        Atomically revoke a refresh token by deleting its active key
+        and setting its revoked key using a Redis pipeline (MULTI/EXEC).
 
-        :param jti: TODO - describe jti.
+        :param jti: The JWT ID of the refresh token to revoke.
         :type jti: str
-        :param exp: TODO - describe exp.
+        :param exp: Token expiration timestamp used to compute revoked key TTL.
         :type exp: Any
-        :return: None.
-        :raises Exception: If the operation fails.
         """
         try:
-            await redis_client.delete(self._refresh_active_key(jti))
             ttl = self._ttl_from_exp(exp)
-            if ttl > 0:
-                await redis_client.set(self._refresh_revoked_key(jti), "1", ex=ttl) # noqa
+            async with redis_client.pipeline(transaction=True) as pipe:
+                pipe.delete(self._refresh_active_key(jti))
+                if ttl > 0:
+                    pipe.set(self._refresh_revoked_key(jti), "1", ex=ttl)
+                await pipe.execute()
         except Exception as ex:
-            logger.warning(f"Failed to revoke refresh token in Redis: {ex}")
+            logger.error(f"Failed to revoke refresh token in Redis: {ex}")
 
     @staticmethod
     def _ttl_from_exp(exp: Any) -> int:
         """
-         ttl from exp.
+        Calculate the remaining TTL in seconds from a token expiration value.
 
-        :param exp: TODO - describe exp.
+        :param exp: Expiration as a datetime or unix timestamp.
         :type exp: Any
-        :return: TODO - describe return value.
+        :return: Remaining seconds until expiration, or 0 if already expired.
         :rtype: int
-        :raises Exception: If the operation fails.
         """
         if isinstance(exp, datetime):
             exp_ts = int(exp.timestamp())
@@ -328,24 +322,24 @@ class AuthService(BaseService):
                 return 0
         return max(exp_ts - int(time.time()), 0)
 
-    async def _ensure_login_not_locked(self, email: str, client_ip: str) -> None: # noqa
+    async def _ensure_login_not_locked(self, email: str, client_ip: str) -> None:
         """
-         ensure login not locked.
+        Check if the login is locked for the given email or IP due to
+        too many failed attempts, and raise if so.
 
-        :param email: TODO - describe email.
+        :param email: User email being checked.
         :type email: str
-        :param client_ip: TODO - describe client_ip.
+        :param client_ip: Client IP address being checked.
         :type client_ip: str
-        :return: None.
-        :raises LoginTemporarilyLocked: If the operation cannot be completed.
+        :raises LoginTemporarilyLocked: If the account or IP is currently locked out.
         """
         email_ttl = 0
         ip_ttl = 0
         try:
-            email_ttl = int(await redis_client.ttl(self._login_lock_key("email", email)) or 0) # noqa
-            ip_ttl = int(await redis_client.ttl(self._login_lock_key("ip", client_ip)) or 0) # noqa
+            email_ttl = int(await redis_client.ttl(self._login_lock_key("email", email)) or 0)
+            ip_ttl = int(await redis_client.ttl(self._login_lock_key("ip", client_ip)) or 0)
         except Exception as ex:
-            logger.warning(f"Login lock check skipped due to Redis error: {ex}") # noqa
+            logger.debug(f"Login lock check skipped due to Redis error: {ex}")
             return
 
         retry_after = max(email_ttl, ip_ttl, 0)
@@ -354,14 +348,13 @@ class AuthService(BaseService):
 
     async def _track_failed_login(self, email: str, client_ip: str) -> None:
         """
-         track failed login.
+        Increment failed login counters for the given email and IP.
+        Locks the account/IP if the threshold is exceeded.
 
-        :param email: TODO - describe email.
+        :param email: Email address that failed login.
         :type email: str
-        :param client_ip: TODO - describe client_ip.
+        :param client_ip: Client IP address that failed login.
         :type client_ip: str
-        :return: None.
-        :raises Exception: If the operation fails.
         """
         window = settings.auth_login_window_seconds
         limit = settings.auth_login_max_attempts
@@ -386,16 +379,14 @@ class AuthService(BaseService):
         except Exception as ex:
             logger.warning(f"Failed to track login attempts in Redis: {ex}")
 
-    async def _clear_failed_login_state(self, email: str, client_ip: str) -> None: # noqa
+    async def _clear_failed_login_state(self, email: str, client_ip: str) -> None:
         """
-         clear failed login state.
+        Clear failed login counters after a successful login.
 
-        :param email: TODO - describe email.
+        :param email: Email address to clear counters for.
         :type email: str
-        :param client_ip: TODO - describe client_ip.
+        :param client_ip: Client IP to clear counters for.
         :type client_ip: str
-        :return: None.
-        :raises Exception: If the operation fails.
         """
         try:
             await redis_client.delete(
@@ -403,4 +394,4 @@ class AuthService(BaseService):
                 self._login_fail_key("ip", client_ip),
             )
         except Exception as ex:
-            logger.warning(f"Failed to clear login failure counters: {ex}")
+            logger.debug(f"Failed to clear login failure counters: {ex}")
