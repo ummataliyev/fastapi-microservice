@@ -1,10 +1,10 @@
 services:
-  template-service:
+  fastapi-microservice:
     build:
       context: ..
       dockerfile: infra/Dockerfile
       target: dev
-    container_name: template-service
+    container_name: fastapi-microservice
     env_file:
       - .env
     ports:
@@ -18,11 +18,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - template-network
+      - fastapi-microservice-network
 
   postgres:
     image: postgres:16-alpine
-    container_name: template-service-postgres
+    container_name: fastapi-microservice-postgres
     environment:
       POSTGRES_DB: template_service_db
       POSTGRES_USER: postgres
@@ -37,7 +37,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - template-network
+      - fastapi-microservice-network
 
 volumes:
   postgres-data:
@@ -45,5 +45,5 @@ volumes:
   files:
 
 networks:
-  template-network:
+  fastapi-microservice-network:
     driver: bridge

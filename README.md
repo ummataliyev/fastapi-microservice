@@ -70,6 +70,16 @@ Open `http://localhost:8000/template/docs` (basic auth: `admin` / `admin` — se
 - `GET  /template/ready`
 - `GET  /template/metrics` (Prometheus)
 
+## Production checklist
+
+Before exposing this template publicly, change the defaults:
+
+- `JWT_SECRET_KEY` — generate with `openssl rand -hex 32`. The default `change-me-in-prod` is unsafe and PyJWT will warn.
+- `CORS_ALLOW_ORIGINS` — set to the explicit list of front-end origins (e.g. `["https://app.example.com"]`). The default `["*"]` is for local dev only.
+- `DOCS_USERNAME` / `DOCS_PASSWORD` — change or disable the basic-auth-protected `/template/docs` endpoint.
+- `DB_PASSWORD` — pick a strong password and inject via secrets manager, not `infra/.env`.
+- `SENTRY_DSN` — optional but recommended; sentry integration is wired in `src/main.py`.
+
 ## Customizing for a new service
 
 1. Find/replace `/template/` with `/<your-service>/` across `src/main.py` and `src/api/v1/__init__.py`.
