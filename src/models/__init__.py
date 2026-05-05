@@ -6,3 +6,5 @@ Example:
 
     __all__ = ["Item"]
 """
+
+from src.models.users import Users  # noqa: F401  (registered for alembic)
