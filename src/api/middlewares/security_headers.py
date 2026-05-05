@@ -14,8 +14,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         path = request.url.path
 
-        response.headers.pop("X-Powered-By", None)
-        response.headers.pop("Server", None)
+        for header in ("X-Powered-By", "Server"):
+            if header in response.headers:
+                del response.headers[header]
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
