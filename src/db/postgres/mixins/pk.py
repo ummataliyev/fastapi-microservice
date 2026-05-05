@@ -1,20 +1,12 @@
-"""
-Primary key mixins for database models using integer ID.
-"""
+import uuid
 
-from sqlalchemy import Integer
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import declarative_mixin
+from sqlalchemy import UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 
-@declarative_mixin
-class IDPkMixin:
-    """
-    Adds an auto-incrementing integer primary key column to a SQLAlchemy model.
-
-    Attributes:
-        id (int): Auto-incrementing primary key.
-    """
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+class UUIDPkMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )

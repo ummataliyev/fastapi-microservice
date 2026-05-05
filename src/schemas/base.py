@@ -1,39 +1,15 @@
-"""
-Base schemas for API responses and common fields.
-"""
-
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel
-
-
-class BaseHTTPExceptionSchema(BaseModel):
-    """
-    Standard schema for API error responses.
-
-    :param message Human-readable error message describing the issue.
-    """
-
-    message: str
+from pydantic import BaseModel, ConfigDict
 
 
 class UUIDSchema(BaseModel):
-    """
-    Schema representing an object with a UUID primary key.
-
-    :param id: Unique identifier (UUID) of the object.
-    """
-
-    id: int
+    id: UUID
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TimestampSchema(BaseModel):
-    """
-    Schema including creation and update timestamps.
-
-    :param created_at: The datetime when the object was created.
-    :param updated_at: The datetime when the object was last updated.
-    """
-
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)

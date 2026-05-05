@@ -1,32 +1,11 @@
-"""
-Shared SQLAlchemy declarative base and naming convention.
-"""
-
 import re
-import inflect
 
-from sqlalchemy.orm import declared_attr
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, declared_attr
 
-
-inflect_engine = inflect.engine()
+_CAMEL_TO_SNAKE = re.compile(r"(?<!^)(?=[A-Z])")
 
 
 class Base(DeclarativeBase):
-    """
-    Base class for SQLAlchemy models with automatic singular snake_case names.
-    """
-
     @declared_attr.directive
-    @classmethod
     def __tablename__(cls) -> str:
-        """
-          tablename  .
-
-        :return: TODO - describe return value.
-        :rtype: str
-        :raises Exception: If the operation fails.
-        """
-        name = re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
-        singular_name = inflect_engine.singular_noun(name)
-        return singular_name if isinstance(singular_name, str) else name
+        return _CAMEL_TO_SNAKE.sub("_", cls.__name__).lower()

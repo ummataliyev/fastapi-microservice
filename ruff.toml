@@ -1,0 +1,11 @@
+preview = true
+target-version = "py312"
+line-length = 100
+extend-exclude = ["uv.lock", "src/migrations"]
+
+[lint]
+select = ["E3", "E4", "E7", "E9", "F", "I", "W6"]
+ignore = ["F541", "F811", "F841"]
+
+[format]
+quote-style = "double"
