@@ -13,7 +13,7 @@ dependencies = [
     "fastapi-pagination>=0.12.32",
     "gunicorn>=23.0.0",
     "httpx>=0.28.0",
-    "bcrypt<4.1",
+    "bcrypt<5.1",
     "passlib[bcrypt]>=1.7.4",
     "prometheus-fastapi-instrumentator>=7.0.0",
     "pydantic>=2.9.0",
