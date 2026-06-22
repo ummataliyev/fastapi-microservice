@@ -25,14 +25,6 @@ class Settings(BaseSettings):
     permission_service_url: str = ""
     permission_service_token: str = ""
 
-    # Base / identity service for authenticated service-to-service calls.
-    base_service_url: str = ""
-    base_service_username: str = ""
-    base_service_password: str = ""
-
-    # Shared default timeout (seconds) for outbound integration HTTP clients.
-    integration_timeout: float = 10.0
-
     postgres: PostgresSettings = PostgresSettings()
     jwt: JWTSettings = JWTSettings()
 
